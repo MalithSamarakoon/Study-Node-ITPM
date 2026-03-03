@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Swiper Arrow Styling */
+:root {
+    --swiper-navigation-color: #a855f7;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+    background-color: white;
+    width: 50px !important;  /* Slightly larger circle */
+    height: 50px !important;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
+    border: 1px solid #f3e8ff;
+    transition: all 0.2s ease;
+}
+
+/* This creates the "gap" by making the arrow icon smaller relative to the circle */
+.swiper-button-next::after,
+.swiper-button-prev::after {
+    font-size: 18px !important; /* Smaller font size = more gap around edges */
+    font-weight: bold;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+    background-color: #f3e8ff;
+    transform: scale(1.1);
+}
+
+@keyframes marquee {
+    0% { transform: translateX(-50%); } /* Starts shifted left */
+    100% { transform: translateX(0%); } /* Moves to the right */
+}
+
+.animate-marquee {
+    display: flex;
+    width: max-content;
+    animation: marquee 30s linear infinite; /* Adjust '30s' to change speed */
+}
+
+/* Pause animation on hover for better readability */
+.animate-marquee:hover {
+    animation-play-state: paused;
+}
+
