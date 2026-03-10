@@ -1,4 +1,6 @@
 import React from 'react';
+import {Link} from 'react-router-dom'
+import profileImage from '../assets/img.png'
 
 const Navbar = () => {
     return (
@@ -8,6 +10,33 @@ const Navbar = () => {
                     {/* Your Purple Logo would go here */}
                     <div className="w-8 h-8 bg-purple-600 rotate-45"></div>
                     <span className="text-xl font-bold text-gray-800">Study Node</span>
+                </div>
+
+                <div className="relative">
+                    {isLoggedIn ? (
+                        <button onClick={() => setShowDropdown(!showDropdown)}>
+                            <img
+                                src={profileImage}
+                                alt="Profile"
+                                className="w-10 h-10 rounded-full border border-gray-200"
+                            />
+                        </button>
+                    ) : (
+                        <div className="flex gap-4">
+                            <button className="text-gray-600 font-medium">Log in</button>
+                            <button className="bg-purple-600 text-white px-4 py-2 rounded-md">Sign up</button>
+                        </div>
+                    )}
+
+                    {/* Profile Dropdown logic */}
+                    {showDropdown && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
+                            <ul className="py-2">
+                                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">My Profile</li>
+                                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600">Sign Out</li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
             </div>
 
