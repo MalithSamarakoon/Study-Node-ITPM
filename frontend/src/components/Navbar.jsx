@@ -1,20 +1,19 @@
-import React, {useState} from 'react';
-import {Link} from 'react-router-dom'
-import profileImage from '../assets/img.png'
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import profileImage from '../assets/img.png';
 
 const Navbar = () => {
-
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
 
     return (
         <header className="w-full">
             <div className="flex justify-between items-center px-8 py-4 bg-white">
-                <div className="flex items-center gap-2">
-                    {/* Your Purple Logo would go here */}
+                {/* Logo & Brand Name - Linked to Home */}
+                <Link to="/" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-purple-600 rotate-45"></div>
                     <span className="text-xl font-bold text-gray-800">Study Node</span>
-                </div>
+                </Link>
 
                 <div className="relative">
                     {isLoggedIn ? (
@@ -28,8 +27,10 @@ const Navbar = () => {
                     ) : (
                         <div className="flex gap-4">
                             <button className="text-gray-600 font-medium">Log in</button>
-                            <Link to={"/registration"}>
-                                <button className="bg-purple-600 text-white px-4 py-2 rounded-md">Sign up</button>
+                            <Link to="/registration">
+                                <button className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                                    Sign up
+                                </button>
                             </Link>
                         </div>
                     )}
@@ -50,15 +51,19 @@ const Navbar = () => {
                 <ul className="flex justify-center items-center gap-12 py-3 text-sm font-medium text-gray-700">
                     <li className="hover:text-purple-600 cursor-pointer">About</li>
                     <li className="hover:text-purple-600 cursor-pointer">Modules</li>
-                    <li className="hover:text-purple-600 cursor-pointer">Blogs</li>
+
+                    {/* Link to Blog Page */}
+                    <Link to="/blogs">
+                        <li className="hover:text-purple-600 cursor-pointer">Blogs</li>
+                    </Link>
+
                     <li className="hover:text-purple-600 cursor-pointer">Q&A section</li>
                     <li className="hover:text-purple-600 cursor-pointer">FAQ</li>
                     <li className="hover:text-purple-600 cursor-pointer">Find a member (TeamUp)</li>
                 </ul>
             </nav>
-
-
         </header>
     );
 };
+
 export default Navbar;
