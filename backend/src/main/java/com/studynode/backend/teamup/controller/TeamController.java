@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/teams")
+@RequestMapping({"/api/v1/teams", "/teams"})
 public class TeamController {
 
     private final TeamService teamService;
