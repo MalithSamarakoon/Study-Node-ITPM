@@ -14,6 +14,7 @@ public record CreateTeamRequest(
         String description,
 
         @NotBlank(message = "requiredSkills is required")
+        @Size(max = 500, message = "requiredSkills must be at most 500 characters")
         String requiredSkills,
 
         @NotNull(message = "createdByUserId is required")
