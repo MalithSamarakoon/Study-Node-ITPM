@@ -179,12 +179,40 @@ public class TeamServiceImpl implements TeamService {
                 .toList();
     }
 
+    @Override
+    public TeamMemberResponse approveMembershipRequest(Long teamId, Long memberId) {
+        Team team = findTeamOrThrow(teamId);
+
+        TeamMember member = teamMemberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Membership request not found"));
+
+        if (!member.getTeam().getId().equals(team.getId())) {
+            throw new BadRequestException("Membership request does not belong to this team");
+        }
+
+        if (member.getStatus() != MembershipStatus.PENDING) {
+            throw new BadRequestException("Only pending membership requests can be approved");
+        }
+
+        member.setStatus(MembershipStatus.APPROVED);
+        TeamMember saved = teamMemberRepository.save(member);
+
+        return new TeamMemberResponse(
+                saved.getId(),
+                saved.getUser().getId(),
+                saved.getUser().getName(),
+                saved.getRoleInTeam(),
+                saved.getStatus());
+    }
+
     private Team findTeamOrThrow(Long teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
     }
 
     private TeamResponse toTeamResponse(Team team) {
+        long memberCount = teamMemberRepository.countByTeamIdAndStatus(team.getId(), MembershipStatus.APPROVED);
+
         return new TeamResponse(
                 team.getId(),
                 team.getTitle(),
@@ -192,6 +220,8 @@ public class TeamServiceImpl implements TeamService {
                 team.getRequiredSkills(),
                 team.getStatus(),
                 team.getCreatedBy().getId(),
+            team.getCreatedBy().getName(),
+            memberCount,
                 team.getCreatedAt());
     }
 }

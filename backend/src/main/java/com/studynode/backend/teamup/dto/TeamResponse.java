@@ -10,6 +10,8 @@ public record TeamResponse(
         String requiredSkills,
         TeamStatus status,
         Long createdByUserId,
+        String createdByName,
+        Long memberCount,
         LocalDateTime createdAt
 ) {
 }

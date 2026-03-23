@@ -24,4 +24,6 @@ public interface TeamService {
     TeamResponse updateTeamStatus(Long teamId, UpdateTeamStatusRequest request);
 
     List<TeamMemberResponse> getTeamMembers(Long teamId);
+
+    TeamMemberResponse approveMembershipRequest(Long teamId, Long memberId);
 }

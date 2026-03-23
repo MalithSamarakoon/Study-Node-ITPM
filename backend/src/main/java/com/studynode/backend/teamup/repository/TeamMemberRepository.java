@@ -9,4 +9,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     List<TeamMember> findByTeamId(Long teamId);
 
     Optional<TeamMember> findByTeamIdAndUserId(Long teamId, Long userId);
+
+    long countByTeamIdAndStatus(Long teamId, com.studynode.backend.teamup.enums.MembershipStatus status);
 }
