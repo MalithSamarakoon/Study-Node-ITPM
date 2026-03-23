@@ -51,6 +51,7 @@ const RegistrationForm = () => {
                         <input
                             type={field.type}
                             name={field.name}
+                            autoComplete={"off"}
                             value={formData[field.name]}
                             onChange={handleChange}
                             className="w-full border border-gray-400 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
@@ -65,6 +66,7 @@ const RegistrationForm = () => {
                     <input
                         type="password"
                         name="password"
+                        autoComplete={"new-password"}
                         value={formData.password}
                         onChange={handleChange}
                         className="w-full border border-gray-400 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"

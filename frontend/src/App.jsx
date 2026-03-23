@@ -1,4 +1,4 @@
-import {Routes, Route, BrowserRouter} from "react-router-dom";
+import {Routes, Route, BrowserRouter, useLocation} from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero.jsx";
 import FeatureSlider from "./components/FeatureSlider.jsx";
@@ -16,20 +16,22 @@ const HomePage = () => (
 )
 
 function App() {
+    const location = useLocation();
+
+    const hideLayout = location.pathname === '/registration' || location.pathname === '/login';
+
     return (
-        <BrowserRouter>
-            <div className="min-h-screen bg-white flex flex-col">
-                <Navbar/>
-                <main className="flex-grow">
-                    <Routes>
-                        <Route path="/" element={<HomePage/>}/>
-                        <Route path="/registration" element={<RegistrationPage/>}/>
-                        <Route path="/blogs" element={<BlogPage/>}/> {/* New Route */}
-                    </Routes>
-                </main>
-                <Footer/>
-            </div>
-        </BrowserRouter>
+        <div className="min-h-screen bg-white flex flex-col">
+            {!hideLayout && <Navbar />}
+            <main className="flex-grow">
+                <Routes>
+                    <Route path="/" element={<HomePage/>}/>
+                    <Route path="/registration" element={<RegistrationPage/>}/>
+                    <Route path="/blogs" element={<BlogPage/>}/>
+                </Routes>
+            </main>
+            {!hideLayout && <Footer />}
+        </div>
     );
 };
 
