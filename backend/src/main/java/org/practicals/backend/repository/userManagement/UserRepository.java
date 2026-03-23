@@ -1,6 +1,6 @@
-package org.practicals.backend.repository;
+package org.practicals.backend.repository.userManagement;
 
-import org.practicals.backend.model.User;
+import org.practicals.backend.model.userManagement.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

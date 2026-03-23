@@ -1,8 +1,8 @@
 package org.practicals.backend.config;
 
-import org.practicals.backend.model.Role;
-import org.practicals.backend.model.User;
-import org.practicals.backend.repository.UserRepository;
+import org.practicals.backend.model.userManagement.Role;
+import org.practicals.backend.model.userManagement.User;
+import org.practicals.backend.repository.userManagement.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
