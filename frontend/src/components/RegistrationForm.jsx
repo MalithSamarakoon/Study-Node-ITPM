@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const RegistrationForm = () => {
-    // 1. State Initialization for all form fields [cite: 85, 99]
+
     const [formData, setFormData] = useState({
         username: '',
         studentId: '',
@@ -11,7 +13,10 @@ const RegistrationForm = () => {
         confirmPassword: ''
     });
 
-    // 2. Password Validation Logic: Tests the input against your 4 rules [cite: 10, 11, 12, 100]
+    const [loading, setLoading] = useState(false);
+    const [serverMessage, setServerMessage] = useState({ text: '', isError: false });
+
+
     const validation = {
         length: formData.password.length >= 8,
         complexity: /[a-z]/.test(formData.password) && /[A-Z]/.test(formData.password),
@@ -19,7 +24,7 @@ const RegistrationForm = () => {
         special: /[@#$%^&+=!]/.test(formData.password)
     };
 
-    // 3. Confirm Password Logic: Checks if fields match after user starts typing
+
     const passwordsMatch = formData.password === formData.confirmPassword;
     const showMatchError = formData.confirmPassword.length > 0 && !passwordsMatch;
 
@@ -28,11 +33,31 @@ const RegistrationForm = () => {
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Final check before calling the Feature Branch 2 API [cite: 102]
+        setServerMessage({ text: 'Successfully registered', isError: false });
+
         if (Object.values(validation).every(Boolean) && passwordsMatch) {
-            console.log("Form submitted to /api/auth/register:", formData);
+            setLoading(true);
+            try{
+                const payload = {
+                    username: formData.username,
+                    studentId: formData.studentId,
+                    email: formData.email,
+                    phoneNumber: formData.phone,
+                    password: formData.password
+                };
+
+                await axios.post('http://localhost:8080/api/auth/register', payload);
+                toast.success("Account created successfully!")
+                setFormData({username: '', studentId: '', email: '', phone: '', password: ''});
+            }catch(error){
+                const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
+                toast.error(errorMessage);
+
+            }finally {
+                setLoading(false);
+            }
         }
     };
 

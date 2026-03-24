@@ -5,7 +5,8 @@ import FeatureSlider from "./components/FeatureSlider.jsx";
 import Feedback from "./components/Feedback.jsx";
 import Footer from "./components/Footer.jsx";
 import RegistrationPage from "./pages/RegistrationPage.jsx";
-import BlogPage from "./pages/BlogPage.jsx"; // New Import
+import BlogPage from "./pages/BlogPage.jsx";
+import {ToastContainer} from 'react-toastify';
 
 const HomePage = () => (
     <>
@@ -31,6 +32,7 @@ function App() {
                 </Routes>
             </main>
             {!hideLayout && <Footer />}
+            <ToastContainer/>
         </div>
     );
 };
