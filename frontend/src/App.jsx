@@ -6,6 +6,7 @@ import Feedback from "./components/Feedback.jsx";
 import Footer from "./components/Footer.jsx";
 import RegistrationPage from "./pages/RegistrationPage.jsx";
 import BlogPage from "./pages/BlogPage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
 import {ToastContainer} from 'react-toastify';
 
 const HomePage = () => (
@@ -28,6 +29,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={<HomePage/>}/>
                     <Route path="/registration" element={<RegistrationPage/>}/>
+                    <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/blogs" element={<BlogPage/>}/>
                 </Routes>
             </main>

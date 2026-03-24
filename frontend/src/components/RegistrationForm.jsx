@@ -104,7 +104,7 @@ const RegistrationForm = () => {
 
                 const response = await axios.post('http://localhost:8080/api/auth/register', payload);
 
-                localStorage.setItem('isLoggedIn', 'true');
+
                 localStorage.setItem('user', JSON.stringify(response.data));
                 window.dispatchEvent(new Event("authChange"));
 
