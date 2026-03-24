@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { createTeam } from "../api/teamApi.js";
+import { buildDescriptionWithMeta } from "../utils/teamMeta.js";
 
 const initialForm = {
-  title: "",
-  description: "",
-  requiredSkills: "",
-  createdByUserId: "",
+  title: "AI Research Project",
+  type: "PROJECT",
+  description: "We are building an AI LMS chatbot and need backend + ML members.",
+  maxMembers: "5",
+  skillInput: "",
+  skills: ["Java", "SpringBoot"],
+  deadline: "2026-03-15",
+  createdByUserId: "1",
 };
 
 function CreateTeamPage() {
@@ -14,6 +19,31 @@ function CreateTeamPage() {
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [serverMessage, setServerMessage] = useState("");
+
+  function addSkill(rawValue) {
+    const value = rawValue.trim();
+    if (!value) {
+      return;
+    }
+
+    setForm((prev) => {
+      if (prev.skills.some((skill) => skill.toLowerCase() === value.toLowerCase())) {
+        return { ...prev, skillInput: "" };
+      }
+      return {
+        ...prev,
+        skills: [...prev.skills, value],
+        skillInput: "",
+      };
+    });
+  }
+
+  function removeSkill(skillToRemove) {
+    setForm((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((skill) => skill !== skillToRemove),
+    }));
+  }
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -34,7 +64,11 @@ function CreateTeamPage() {
       nextErrors.description = "Description is required";
     }
 
-    if (!form.requiredSkills.trim()) {
+    if (!form.maxMembers.trim() || Number.isNaN(Number(form.maxMembers))) {
+      nextErrors.maxMembers = "Max members must be a valid number";
+    }
+
+    if (form.skills.length === 0) {
       nextErrors.requiredSkills = "Required skills are required";
     }
 
@@ -61,8 +95,13 @@ function CreateTeamPage() {
     try {
       await createTeam({
         title: form.title.trim(),
-        description: form.description.trim(),
-        requiredSkills: form.requiredSkills.trim(),
+        description: buildDescriptionWithMeta(
+          form.description,
+          form.type,
+          Number(form.maxMembers),
+          form.deadline,
+        ),
+        requiredSkills: form.skills.join(", "),
         createdByUserId: Number(form.createdByUserId),
       });
 
@@ -82,32 +121,58 @@ function CreateTeamPage() {
   }
 
   return (
-    <section className="mx-auto max-w-3xl rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm sm:p-8">
-      <h2 className="text-2xl font-bold text-slate-900">Create Team</h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Start a new study team and describe what kind of members you need.
+    <section className="rounded-3xl border border-[#e7cab5] bg-[#fffdfb] p-6 text-[#6a3c1c] shadow-[0_8px_20px_rgba(123,63,23,0.06)] sm:p-8">
+      <h2 className="text-5xl font-extrabold text-[#7b3f17]">Create a New Team</h2>
+      <p className="mt-2 text-xl text-[#885534]">
+        Fill in the details to create a new project team.
       </p>
 
       <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
         <div>
-          <label htmlFor="title" className="block text-sm font-semibold text-slate-700">
-            Title
+          <label htmlFor="title" className="block text-lg font-semibold text-[#704021]">
+            Team Name
           </label>
           <input
             id="title"
             name="title"
             value={form.title}
             onChange={handleChange}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
-            placeholder="AI Project Sprint Team"
+            className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+            placeholder="Enter team name..."
           />
           {errors.title ? <p className="mt-1 text-sm text-rose-600">{errors.title}</p> : null}
         </div>
 
         <div>
+          <p className="block text-lg font-semibold text-[#704021]">Type</p>
+          <div className="mt-2 flex flex-wrap gap-5 text-base">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="type"
+                value="PROJECT"
+                checked={form.type === "PROJECT"}
+                onChange={handleChange}
+              />
+              Project
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="type"
+                value="EVENT"
+                checked={form.type === "EVENT"}
+                onChange={handleChange}
+              />
+              Event
+            </label>
+          </div>
+        </div>
+
+        <div>
           <label
             htmlFor="description"
-            className="block text-sm font-semibold text-slate-700"
+            className="block text-lg font-semibold text-[#704021]"
           >
             Description
           </label>
@@ -117,29 +182,93 @@ function CreateTeamPage() {
             value={form.description}
             onChange={handleChange}
             rows={5}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
-            placeholder="Describe team goals, timeline, and collaboration style."
+            className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+            placeholder="Describe the project, goals, and objectives..."
           />
           {errors.description ? (
             <p className="mt-1 text-sm text-rose-600">{errors.description}</p>
           ) : null}
         </div>
 
+        <div className="grid gap-5 md:grid-cols-2">
+          <div>
+            <label
+              htmlFor="maxMembers"
+              className="block text-lg font-semibold text-[#704021]"
+            >
+              Max Members
+            </label>
+            <input
+              id="maxMembers"
+              name="maxMembers"
+              value={form.maxMembers}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+              placeholder="5"
+            />
+            {errors.maxMembers ? (
+              <p className="mt-1 text-sm text-rose-600">{errors.maxMembers}</p>
+            ) : null}
+          </div>
+
+          <div>
+            <label
+              htmlFor="deadline"
+              className="block text-lg font-semibold text-[#704021]"
+            >
+              Deadline (optional)
+            </label>
+            <input
+              id="deadline"
+              name="deadline"
+              type="date"
+              value={form.deadline}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+            />
+          </div>
+        </div>
+
         <div>
-          <label
-            htmlFor="requiredSkills"
-            className="block text-sm font-semibold text-slate-700"
-          >
-            Required Skills
-          </label>
-          <input
-            id="requiredSkills"
-            name="requiredSkills"
-            value={form.requiredSkills}
-            onChange={handleChange}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
-            placeholder="React, Spring Boot, SQL"
-          />
+          <label className="block text-lg font-semibold text-[#704021]">Skills Required</label>
+          <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-[#e5c5ad] bg-[#fffcfa] p-3">
+            {form.skills.map((skill) => (
+              <button
+                key={skill}
+                type="button"
+                onClick={() => removeSkill(skill)}
+                className="rounded-full bg-[#ffe7d3] px-3 py-1 text-sm font-semibold text-[#8a4f26]"
+                title="Remove skill"
+              >
+                {skill} x
+              </button>
+            ))}
+            {form.skills.length === 0 ? (
+              <span className="text-sm text-[#9b6d4e]">No skills added yet.</span>
+            ) : null}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              name="skillInput"
+              value={form.skillInput}
+              onChange={handleChange}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addSkill(form.skillInput);
+                }
+              }}
+              className="w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+              placeholder="Add skill"
+            />
+            <button
+              type="button"
+              onClick={() => addSkill(form.skillInput)}
+              className="rounded-xl border border-[#d7b69e] px-4 py-3 text-sm font-semibold text-[#8a4f26]"
+            >
+              + Add
+            </button>
+          </div>
           {errors.requiredSkills ? (
             <p className="mt-1 text-sm text-rose-600">{errors.requiredSkills}</p>
           ) : null}
@@ -148,7 +277,7 @@ function CreateTeamPage() {
         <div>
           <label
             htmlFor="createdByUserId"
-            className="block text-sm font-semibold text-slate-700"
+            className="block text-lg font-semibold text-[#704021]"
           >
             Creator User ID
           </label>
@@ -157,7 +286,7 @@ function CreateTeamPage() {
             name="createdByUserId"
             value={form.createdByUserId}
             onChange={handleChange}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
+            className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
             placeholder="1"
           />
           {errors.createdByUserId ? (
@@ -171,9 +300,9 @@ function CreateTeamPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex items-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex items-center rounded-xl bg-[#ef8f31] px-6 py-3 text-lg font-semibold text-white transition hover:bg-[#dd7f23] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {submitting ? "Submitting..." : "Submit"}
+          {submitting ? "Creating..." : "Create Team"}
         </button>
       </form>
     </section>

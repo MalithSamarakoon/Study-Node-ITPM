@@ -82,3 +82,15 @@ export function updateTeamStatus(id, status) {
     body: JSON.stringify({ status }),
   });
 }
+
+export function approveMembershipRequest(teamId, memberId) {
+  return request(`/${teamId}/members/${memberId}/approve`, {
+    method: "PUT",
+  });
+}
+
+export function rejectMembershipRequest(teamId, memberId) {
+  return request(`/${teamId}/members/${memberId}/reject`, {
+    method: "PUT",
+  });
+}

@@ -26,4 +26,6 @@ public interface TeamService {
     List<TeamMemberResponse> getTeamMembers(Long teamId);
 
     TeamMemberResponse approveMembershipRequest(Long teamId, Long memberId);
+
+    TeamMemberResponse rejectMembershipRequest(Long teamId, Long memberId);
 }

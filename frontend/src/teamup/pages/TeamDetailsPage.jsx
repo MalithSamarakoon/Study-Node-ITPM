@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getTeamById, getTeamMembers, joinTeam } from "../api/teamApi.js";
-import StatusBadge from "../components/StatusBadge.jsx";
+import {
+  approveMembershipRequest,
+  getTeamById,
+  getTeamMembers,
+  joinTeam,
+  rejectMembershipRequest,
+} from "../api/teamApi.js";
+import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
+import { formatTeamStatus, parseTeamMeta, splitSkills } from "../utils/teamMeta.js";
 
 function TeamDetailsPage() {
   const { id } = useParams();
@@ -9,10 +16,15 @@ function TeamDetailsPage() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [joinForm, setJoinForm] = useState({ userId: "", roleInTeam: "" });
-  const [joinError, setJoinError] = useState("");
-  const [joinSuccess, setJoinSuccess] = useState("");
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinForm, setJoinForm] = useState({ userId: "", message: "Hi, I have SpringBoot experience" });
+  const [joinMessage, setJoinMessage] = useState({ error: "", success: "" });
+  const [viewerUserId, setViewerUserId] = useState(
+    () => window.localStorage.getItem("teamup.viewerUserId") || "",
+  );
   const [joining, setJoining] = useState(false);
+  const [updatingMemberId, setUpdatingMemberId] = useState(null);
+  const [isMockMode, setIsMockMode] = useState(false);
 
   async function loadTeamDetails(teamId) {
     setLoading(true);
@@ -25,8 +37,13 @@ function TeamDetailsPage() {
       ]);
       setTeam(teamData);
       setMembers(membersData);
-    } catch (loadError) {
-      setError(loadError.message || "Failed to load team details.");
+      setIsMockMode(false);
+    } catch {
+      const fallbackTeam = mockTeams.find((mock) => String(mock.id) === String(teamId)) || mockTeams[0];
+      setTeam(fallbackTeam || null);
+      setMembers(mockMembersByTeamId[fallbackTeam?.id] || []);
+      setIsMockMode(true);
+      setError("Backend unavailable. Showing dummy TeamUp details.");
     } finally {
       setLoading(false);
     }
@@ -43,38 +60,85 @@ function TeamDetailsPage() {
   function handleJoinChange(event) {
     const { name, value } = event.target;
     setJoinForm((prev) => ({ ...prev, [name]: value }));
-    setJoinError("");
-    setJoinSuccess("");
+    setJoinMessage({ error: "", success: "" });
   }
 
   async function handleJoinRequest(event) {
     event.preventDefault();
 
     if (!joinForm.userId.trim() || Number.isNaN(Number(joinForm.userId))) {
-      setJoinError("Valid user ID is required.");
+      setJoinMessage({ error: "Valid user ID is required.", success: "" });
       return;
     }
 
-    if (!joinForm.roleInTeam.trim()) {
-      setJoinError("Role in team is required.");
+    if (!joinForm.message.trim()) {
+      setJoinMessage({ error: "Message is required.", success: "" });
       return;
     }
 
     setJoining(true);
 
     try {
-      await joinTeam(id, {
-        userId: Number(joinForm.userId),
-        roleInTeam: joinForm.roleInTeam.trim(),
-      });
-      setJoinSuccess("Join request sent successfully.");
-      setJoinForm({ userId: "", roleInTeam: "" });
-      setJoinError("");
-      await loadTeamDetails(id);
+      if (isMockMode) {
+        const nextId = Math.max(0, ...members.map((member) => Number(member.id))) + 1;
+        setMembers((prev) => [
+          ...prev,
+          {
+            id: nextId,
+            userId: Number(joinForm.userId),
+            userName: `Student ${joinForm.userId}`,
+            roleInTeam: joinForm.message.trim(),
+            status: "PENDING",
+          },
+        ]);
+      } else {
+        await joinTeam(id, {
+          userId: Number(joinForm.userId),
+          roleInTeam: joinForm.message.trim(),
+        });
+      }
+
+      setJoinMessage({ error: "", success: "Request Pending" });
+      setJoinForm({ userId: "", message: "Hi, I have SpringBoot experience" });
+      setJoinModalOpen(false);
+
+      if (!isMockMode) {
+        await loadTeamDetails(id);
+      }
     } catch (requestError) {
-      setJoinError(requestError.message || "Failed to send join request.");
+      setJoinMessage({
+        error: requestError.message || "Failed to send join request.",
+        success: "",
+      });
     } finally {
       setJoining(false);
+    }
+  }
+
+  async function handleRequestAction(memberId, action) {
+    setUpdatingMemberId(memberId);
+    try {
+      if (isMockMode) {
+        setMembers((prev) =>
+          prev.map((member) =>
+            member.id === memberId
+              ? { ...member, status: action === "approve" ? "APPROVED" : "REJECTED" }
+              : member,
+          ),
+        );
+      } else {
+        if (action === "approve") {
+          await approveMembershipRequest(id, memberId);
+        } else {
+          await rejectMembershipRequest(id, memberId);
+        }
+
+        await loadTeamDetails(id);
+      }
+    } catch (actionError) {
+      setError(actionError.message || "Failed to update join request.");
+    } finally {
+      setUpdatingMemberId(null);
     }
   }
 
@@ -90,78 +154,156 @@ function TeamDetailsPage() {
     return <p className="text-sm text-slate-600">Team not found.</p>;
   }
 
+  const meta = parseTeamMeta(team.description);
+  const skills = splitSkills(team.requiredSkills);
+  const currentMembers = members.filter((member) => member.status === "APPROVED");
+  const pendingMembers = members.filter((member) => member.status === "PENDING");
+  const uiStatus = formatTeamStatus(team.status, team.memberCount, meta.maxMembers);
+  const isLeaderView = viewerUserId.trim() && String(team.createdByUserId) === viewerUserId.trim();
+
   return (
-    <section className="grid gap-5 lg:grid-cols-[2fr_1fr]">
-      <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-2xl font-bold text-slate-900">{team.title}</h2>
-          <StatusBadge status={team.status} />
+    <section className="space-y-5 text-[#6a3a1a]">
+      <article className="rounded-3xl border border-[#e8cab5] bg-[#fffdfb] p-6 shadow-[0_8px_20px_rgba(123,63,23,0.06)]">
+        <h2 className="text-5xl font-extrabold text-[#7b3f17]">{team.title}</h2>
+        <div className="mt-4 grid gap-1 text-lg text-[#83522f]">
+          <p>Created by: {team.createdByName}</p>
+          <p>Type: {meta.type}</p>
+          <p>
+            Members: {team.memberCount} / {meta.maxMembers}
+          </p>
+          <p>Status: {uiStatus}</p>
+          <p>Deadline: {meta.deadline || "Not specified"}</p>
         </div>
 
-        <p className="mt-4 text-sm leading-6 text-slate-700">{team.description}</p>
-
-        <div className="mt-5 space-y-2 text-sm text-slate-700">
-          <p>
-            <span className="font-semibold">Required skills:</span> {team.requiredSkills}
-          </p>
-          <p>
-            <span className="font-semibold">Created by:</span> {team.createdByName} (ID: {team.createdByUserId})
-          </p>
-          <p>
-            <span className="font-semibold">Members:</span> {team.memberCount}
-          </p>
-        </div>
-      </article>
-
-      <aside className="space-y-5">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900">Join Request</h3>
-          <form className="mt-4 space-y-3" onSubmit={handleJoinRequest}>
-            <input
-              name="userId"
-              value={joinForm.userId}
-              onChange={handleJoinChange}
-              placeholder="User ID"
-              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-emerald-500"
-            />
-            <input
-              name="roleInTeam"
-              value={joinForm.roleInTeam}
-              onChange={handleJoinChange}
-              placeholder="Role in Team"
-              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-emerald-500"
-            />
-
-            {joinError ? <p className="text-sm text-rose-600">{joinError}</p> : null}
-            {joinSuccess ? <p className="text-sm text-emerald-600">{joinSuccess}</p> : null}
-
-            <button
-              type="submit"
-              disabled={joining}
-              className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {joining ? "Sending..." : "Join Request"}
-            </button>
-          </form>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900">Members List</h3>
-          <ul className="mt-3 space-y-2 text-sm text-slate-700">
-            {members.length === 0 ? (
-              <li className="text-slate-500">No members yet.</li>
-            ) : (
-              members.map((member) => (
-                <li key={member.id} className="rounded-xl border border-slate-200 p-3">
-                  <p className="font-semibold text-slate-800">{member.userName}</p>
-                  <p>Role: {member.roleInTeam}</p>
-                  <p>Status: {member.status}</p>
-                </li>
-              ))
-            )}
+        <div className="mt-6">
+          <h3 className="text-2xl font-bold text-[#7c3f16]">Required Skills:</h3>
+          <ul className="mt-2 space-y-1 text-lg text-[#885533]">
+            {skills.length === 0 ? <li>No skills listed.</li> : null}
+            {skills.map((skill) => (
+              <li key={skill}>✔ {skill}</li>
+            ))}
           </ul>
         </div>
-      </aside>
+
+        <div className="mt-6">
+          <h3 className="text-2xl font-bold text-[#7c3f16]">Description:</h3>
+          <p className="mt-2 rounded-2xl border border-[#ebd6c8] bg-[#fff7f0] p-4 text-lg text-[#7c4c2b]">
+            {meta.cleanDescription || "No description provided."}
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="text-2xl font-bold text-[#7c3f16]">Current Members:</h3>
+          <ul className="mt-2 space-y-1 text-lg text-[#83522f]">
+            <li>👑 {team.createdByName} (Leader)</li>
+            {currentMembers
+              .filter((member) => member.userName !== team.createdByName)
+              .map((member) => (
+                <li key={member.id}>👤 {member.userName}</li>
+              ))}
+          </ul>
+        </div>
+
+        {isLeaderView ? (
+          <div className="mt-7 rounded-2xl border border-[#ebd6c8] bg-[#fff7f0] p-4">
+            <h3 className="text-2xl font-bold text-[#7c3f16]">
+              Join Requests ({pendingMembers.length})
+            </h3>
+
+            <div className="mt-3 space-y-3">
+              {pendingMembers.length === 0 ? (
+                <p className="text-base text-[#8d5e3f]">No pending requests.</p>
+              ) : (
+                pendingMembers.map((member) => (
+                  <article key={member.id} className="rounded-xl border border-[#e5c8b4] bg-white p-4">
+                    <p className="text-lg font-semibold text-[#7f451e]">👤 {member.userName}</p>
+                    <p className="text-base text-[#8d5e3f]">Message: {member.roleInTeam}</p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleRequestAction(member.id, "approve")}
+                        disabled={updatingMemberId === member.id}
+                        className="rounded-lg bg-[#ef8f31] px-3 py-2 text-sm font-semibold text-white disabled:opacity-70"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleRequestAction(member.id, "reject")}
+                        disabled={updatingMemberId === member.id}
+                        className="rounded-lg border border-[#d0aa8f] px-3 py-2 text-sm font-semibold text-[#7e461f] disabled:opacity-70"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-7 flex flex-wrap items-center gap-3">
+          <input
+            value={viewerUserId}
+            onChange={(event) => {
+              const value = event.target.value;
+              setViewerUserId(value);
+              window.localStorage.setItem("teamup.viewerUserId", value);
+            }}
+            className="rounded-xl border border-[#e5c5ad] px-4 py-2.5 text-sm outline-none focus:border-[#eb8f3a]"
+            placeholder="Set your user ID (for leader view)"
+          />
+
+          <button
+            onClick={() => setJoinModalOpen(true)}
+            className="rounded-xl bg-[#ef8f31] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21]"
+          >
+            Request to Join
+          </button>
+        </div>
+
+        {joinMessage.success ? <p className="mt-3 text-base font-semibold text-amber-700">{joinMessage.success}</p> : null}
+        {joinMessage.error ? <p className="mt-3 text-base text-rose-700">{joinMessage.error}</p> : null}
+      </article>
+
+      {joinModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-xl rounded-3xl border border-[#ebc4a9] bg-[#fffdfb] p-6">
+            <h3 className="text-2xl font-bold text-[#7c3f16]">Message to Leader</h3>
+            <form className="mt-3 space-y-3" onSubmit={handleJoinRequest}>
+              <input
+                name="userId"
+                value={joinForm.userId}
+                onChange={handleJoinChange}
+                placeholder="Your User ID"
+                className="w-full rounded-xl border border-[#efcfbb] px-4 py-3 outline-none focus:border-[#eb8f3a]"
+              />
+              <textarea
+                name="message"
+                value={joinForm.message}
+                onChange={handleJoinChange}
+                rows={4}
+                className="w-full rounded-xl border border-[#efcfbb] px-4 py-3 outline-none focus:border-[#eb8f3a]"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setJoinModalOpen(false)}
+                  className="rounded-xl border border-[#d7b69e] px-4 py-2 text-sm font-semibold text-[#7e461f]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={joining}
+                  className="rounded-xl bg-[#ef8f31] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+                >
+                  {joining ? "Sending..." : "Send Request"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

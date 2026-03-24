@@ -14,6 +14,7 @@ function App() {
       <Route element={<TeamupLayout />}>
         <Route path="/teams/new" element={<CreateTeamPage />} />
         <Route path="/teams" element={<TeamListPage />} />
+        <Route path="/teams/my" element={<TeamListPage onlyMine />} />
         <Route path="/teams/:id" element={<TeamDetailsPage />} />
         <Route path="/admin/teamup" element={<TeamAdminPage />} />
       </Route>

@@ -205,6 +205,32 @@ public class TeamServiceImpl implements TeamService {
                 saved.getStatus());
     }
 
+    @Override
+    public TeamMemberResponse rejectMembershipRequest(Long teamId, Long memberId) {
+        Team team = findTeamOrThrow(teamId);
+
+        TeamMember member = teamMemberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Membership request not found"));
+
+        if (!member.getTeam().getId().equals(team.getId())) {
+            throw new BadRequestException("Membership request does not belong to this team");
+        }
+
+        if (member.getStatus() != MembershipStatus.PENDING) {
+            throw new BadRequestException("Only pending membership requests can be rejected");
+        }
+
+        member.setStatus(MembershipStatus.REJECTED);
+        TeamMember saved = teamMemberRepository.save(member);
+
+        return new TeamMemberResponse(
+                saved.getId(),
+                saved.getUser().getId(),
+                saved.getUser().getName(),
+                saved.getRoleInTeam(),
+                saved.getStatus());
+    }
+
     private Team findTeamOrThrow(Long teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));

@@ -75,4 +75,16 @@ public class TeamController {
     public ResponseEntity<List<TeamMemberResponse>> getTeamMembers(@PathVariable Long id) {
         return ResponseEntity.ok(teamService.getTeamMembers(id));
     }
+
+    @PutMapping("/{id}/members/{memberId}/approve")
+    public ResponseEntity<TeamMemberResponse> approveMembershipRequest(@PathVariable Long id,
+                                                                       @PathVariable Long memberId) {
+        return ResponseEntity.ok(teamService.approveMembershipRequest(id, memberId));
+    }
+
+    @PutMapping("/{id}/members/{memberId}/reject")
+    public ResponseEntity<TeamMemberResponse> rejectMembershipRequest(@PathVariable Long id,
+                                                                      @PathVariable Long memberId) {
+        return ResponseEntity.ok(teamService.rejectMembershipRequest(id, memberId));
+    }
 }
