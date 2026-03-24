@@ -1,10 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import profileImage from '../assets/img.png';
 
 const Navbar = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
     const [showDropdown, setShowDropdown] = useState(false);
+
+    useEffect(() => {
+        const checkAuth = () => {
+            setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+        };
+        window.addEventListener("authChange", checkAuth);
+
+        return () => {
+            window.removeEventListener("authChange", checkAuth);
+        };
+    }, []);
+
+    const handleSignOut = () => {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('user');
+        setIsLoggedIn(false);
+        setShowDropdown(false);
+        navigate('/');
+    };
 
     return (
         <header className="w-full">
@@ -35,12 +54,12 @@ const Navbar = () => {
                         </div>
                     )}
 
-                    {/* Profile Dropdown logic */}
+
                     {showDropdown && (
                         <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
                             <ul className="py-2">
                                 <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">My Profile</li>
-                                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600">Sign Out</li>
+                                <li onClick={handleSignOut} className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600">Sign Out</li>
                             </ul>
                         </div>
                     )}
@@ -52,7 +71,7 @@ const Navbar = () => {
                     <li className="hover:text-purple-600 cursor-pointer">About</li>
                     <li className="hover:text-purple-600 cursor-pointer">Modules</li>
 
-                    {/* Link to Blog Page */}
+
                     <Link to="/blogs">
                         <li className="hover:text-purple-600 cursor-pointer">Blogs</li>
                     </Link>

@@ -1,4 +1,4 @@
-package org.practicals.backend.model;
+package org.practicals.backend.model.userManagement;
 
 import jakarta.persistence.*;
 import lombok.*;
