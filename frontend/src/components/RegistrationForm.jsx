@@ -14,9 +14,8 @@ const RegistrationForm = () => {
         confirmPassword: ''
     });
 
+    const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
-    const [serverMessage, setServerMessage] = useState({ text: '', isError: false });
-
 
     const validation = {
         length: formData.password.length >= 8,
@@ -32,11 +31,55 @@ const RegistrationForm = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
+
+        if(errors[name]){
+            setErrors({...errors, [name]: ''});
+        }
     };
+
+    const validateField = (name, value) => {
+        let errorMsg = '';
+        if(value.trim() === '') return '';
+
+        switch (name) {
+            case 'studentId':
+                const idRegex = /^IT\d{8}$/;
+                if(!idRegex.test(value)){
+                    errorMsg = "Student ID must start with 'IT' followed by 8 digits.";
+                }
+                break;
+
+            case 'email':
+                if(!value.includes('@')){
+                    errorMsg = "Please enter a valid email address.";
+                }
+                break;
+
+            case 'phone':
+                const phoneRegex = /^\d{10}$/;
+                if(!phoneRegex.test(value)){
+                    errorMsg = "Phone number must have exactly 10 digits.";
+                }
+                break;
+            default:
+                break;
+        }
+        return errorMsg;
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        const error = validateField(name, value);
+        setErrors((prev) => ({ ...prev, [name]: error }));
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setServerMessage({ text: 'Successfully registered', isError: false });
+        const hasErrors = Object.values(errors).some(msg => msg !== '');
+        if (hasErrors) {
+            toast.error("Please fix the errors before submitting.");
+            return;
+        }
 
         if (Object.values(validation).every(Boolean) && passwordsMatch) {
             setLoading(true);
@@ -49,7 +92,7 @@ const RegistrationForm = () => {
                     password: formData.password
                 };
 
-                await axios.post('http://localhost:8080/api/auth/register', payload);
+                const response = await axios.post('http://localhost:8080/api/auth/register', payload);
 
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('user', JSON.stringify(response.data));
@@ -89,13 +132,23 @@ const RegistrationForm = () => {
                             autoComplete={"off"}
                             value={formData[field.name]}
                             onChange={handleChange}
-                            className="w-full border border-gray-400 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+                            onBlur={handleBlur}
+                            className={`w-full border rounded-xl p-2 focus:outline-none focus:ring-2 transition-all ${
+                                errors[field.name]
+                                    ? 'border-red-500 focus:ring-red-200 bg-red-50'
+                                    : 'border-gray-400 focus:ring-purple-300'
+                            }`}
                             required
                         />
+                        {errors[field.name] && (
+                            <span className="text-red-500 text-[10px] mt-1 ml-1 font-medium animate-bounce">
+                                {errors[field.name]}
+                            </span>
+                        )}
                     </div>
                 ))}
 
-                {/* Password Field with Rules  */}
+
                 <div className="flex flex-col">
                     <label className="text-[#6366f1] font-semibold text-sm mb-1 ml-1">Password</label>
                     <input
@@ -107,7 +160,7 @@ const RegistrationForm = () => {
                         className="w-full border border-gray-400 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
                         required
                     />
-                    {/* Dynamic Password Rules List  */}
+
                     <ul className="mt-3 grid grid-cols-1 gap-1 text-xs px-1">
                         <li className={`flex items-center gap-2 ${validation.length ? 'text-green-600' : 'text-red-500'}`}>
                             <span className="text-[10px]">{validation.length ? '✔' : '●'}</span> Minimum 8 characters
@@ -124,7 +177,7 @@ const RegistrationForm = () => {
                     </ul>
                 </div>
 
-                {/* Confirm Password Field */}
+
                 <div className="flex flex-col">
                     <label className="text-[#6366f1] font-semibold text-sm mb-1 ml-1">Confirm Password</label>
                     <input
@@ -145,7 +198,7 @@ const RegistrationForm = () => {
                 </div>
             </div>
 
-            {/* Register Button - Matches the purple pill design */}
+
             <button
                 type="submit"
                 disabled={!Object.values(validation).every(Boolean) || !passwordsMatch}
