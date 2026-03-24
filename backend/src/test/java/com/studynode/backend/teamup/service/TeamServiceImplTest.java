@@ -57,12 +57,12 @@ class TeamServiceImplTest {
         savedTeam.setCreatedBy(creator);
         savedTeam.setCreatedAt(LocalDateTime.now());
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(creator));
+        when(userRepository.findFirstByRoleOrderByIdAsc(UserRole.STUDENT)).thenReturn(Optional.of(creator));
         when(teamRepository.save(any(Team.class))).thenReturn(savedTeam);
         when(teamMemberRepository.countByTeamIdAndStatus(10L, MembershipStatus.APPROVED)).thenReturn(0L);
 
         TeamResponse response = teamService.createTeam(
-                new CreateTeamRequest("AI Study Group", "Prepare together", "Java, Spring", 1L));
+            new CreateTeamRequest("AI Study Group", "Prepare together", "Java, Spring"));
 
         assertEquals(10L, response.id());
         assertEquals("AI Study Group", response.title());

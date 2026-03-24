@@ -42,6 +42,15 @@ export function getTeams(skill) {
   return request(query);
 }
 
+export function getJoinedTeams(userId) {
+  return request(`/joined?userId=${encodeURIComponent(userId)}`);
+}
+
+export function getCreatedTeams(userId, skill) {
+  const skillQuery = skill ? `&skill=${encodeURIComponent(skill)}` : "";
+  return request(`/created?userId=${encodeURIComponent(userId)}${skillQuery}`);
+}
+
 export function getTeamById(id) {
   return request(`/${id}`);
 }

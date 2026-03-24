@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getTeams, joinTeam } from "../api/teamApi.js";
-import { mockTeams } from "../data/mockTeamupData.js";
+import { getCreatedTeams, getJoinedTeams, joinTeam } from "../api/teamApi.js";
+import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
 import {
   formatTeamStatus,
   parseTeamMeta,
@@ -9,47 +9,80 @@ import {
 } from "../utils/teamMeta.js";
 
 function TeamListPage({ onlyMine = false }) {
+  const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [joiningTeamId, setJoiningTeamId] = useState(null);
-  const [viewerUserId, setViewerUserId] = useState(
-    () => window.localStorage.getItem("teamup.viewerUserId") || "",
-  );
   const [requestPendingIds, setRequestPendingIds] = useState({});
   const [joinModal, setJoinModal] = useState({
     open: false,
     teamId: null,
     teamTitle: "",
-    userId: "",
     message: "Hi, I have SpringBoot experience",
     error: "",
   });
   const [isMockMode, setIsMockMode] = useState(false);
 
-  async function loadTeams(skill) {
+  const loadTeams = useCallback(async (skill) => {
     setLoading(true);
     setError("");
 
     try {
-      const data = await getTeams(skill);
+      let data = [];
+
+      if (onlyMine) {
+        data = await getJoinedTeams(currentUserId);
+      } else {
+        data = await getCreatedTeams(currentUserId, skill);
+      }
+
       const resolved = data.length > 0 ? data : mockTeams;
-      setTeams(resolved);
+      if (onlyMine) {
+        const filteredMock = resolved.filter((team) => {
+          const members = mockMembersByTeamId[team.id] || [];
+          return members.some(
+            (member) =>
+              String(member.userId) === currentUserId && member.status !== "REJECTED",
+          );
+        });
+        setTeams(data.length > 0 ? data : filteredMock);
+      } else {
+        const createdMock = resolved.filter(
+          (team) => String(team.createdByUserId) === currentUserId,
+        );
+        setTeams(data.length > 0 ? data : createdMock);
+      }
       setIsMockMode(data.length === 0);
     } catch {
-      setTeams(mockTeams);
+      if (onlyMine) {
+        const filteredMock = mockTeams.filter((team) => {
+          const members = mockMembersByTeamId[team.id] || [];
+          return members.some(
+            (member) =>
+              String(member.userId) === currentUserId && member.status !== "REJECTED",
+          );
+        });
+        setTeams(filteredMock);
+      } else {
+        const createdMock = mockTeams.filter(
+          (team) => String(team.createdByUserId) === currentUserId,
+        );
+        setTeams(createdMock);
+      }
       setIsMockMode(true);
       setError("Backend unavailable. Showing dummy TeamUp data.");
     } finally {
       setLoading(false);
     }
-  }
+  }, [currentUserId, onlyMine]);
 
   useEffect(() => {
     loadTeams("");
-  }, []);
+  }, [loadTeams]);
 
   const list = useMemo(() => {
     const sorted = [...teams].sort((a, b) => Number(b.id) - Number(a.id));
@@ -68,12 +101,6 @@ function TeamListPage({ onlyMine = false }) {
         };
       })
       .filter((team) => {
-        if (onlyMine && viewerUserId.trim()) {
-          if (String(team.createdByUserId) !== viewerUserId.trim()) {
-            return false;
-          }
-        }
-
         if (typeFilter !== "ALL" && team.meta.type !== typeFilter) {
           return false;
         }
@@ -89,14 +116,13 @@ function TeamListPage({ onlyMine = false }) {
           team.requiredSkills.toLowerCase().includes(q)
         );
       });
-  }, [onlyMine, teams, searchText, typeFilter, viewerUserId]);
+  }, [teams, searchText, typeFilter]);
 
   function openJoinModal(team) {
     setJoinModal({
       open: true,
       teamId: team.id,
       teamTitle: team.title,
-      userId: "",
       message: "Hi, I have SpringBoot experience",
       error: "",
     });
@@ -107,11 +133,6 @@ function TeamListPage({ onlyMine = false }) {
   }
 
   async function sendJoinRequest() {
-    if (!joinModal.userId.trim() || Number.isNaN(Number(joinModal.userId))) {
-      setJoinModal((prev) => ({ ...prev, error: "Valid user ID is required." }));
-      return;
-    }
-
     if (!joinModal.message.trim()) {
       setJoinModal((prev) => ({ ...prev, error: "Message is required." }));
       return;
@@ -121,7 +142,7 @@ function TeamListPage({ onlyMine = false }) {
     try {
       if (!isMockMode) {
         await joinTeam(joinModal.teamId, {
-          userId: Number(joinModal.userId),
+          userId: Number(currentUserId),
           roleInTeam: joinModal.message.trim(),
         });
       }
@@ -181,20 +202,6 @@ function TeamListPage({ onlyMine = false }) {
           </Link>
         </div>
 
-        {onlyMine ? (
-          <div className="mt-3">
-            <input
-              value={viewerUserId}
-              onChange={(event) => {
-                const value = event.target.value;
-                setViewerUserId(value);
-                window.localStorage.setItem("teamup.viewerUserId", value);
-              }}
-              className="w-full rounded-2xl border border-[#efcfbb] bg-white px-4 py-3 text-base outline-none focus:border-[#eb8f3a]"
-              placeholder="Enter your user ID to load your teams"
-            />
-          </div>
-        ) : null}
       </div>
 
       {loading ? <p className="text-base text-[#8d5a39]">Loading teams...</p> : null}
@@ -266,16 +273,6 @@ function TeamListPage({ onlyMine = false }) {
           <div className="w-full max-w-xl rounded-3xl border border-[#ebc4a9] bg-[#fffdfb] p-6">
             <h3 className="text-2xl font-bold text-[#7c3f16]">Request to Join</h3>
             <p className="mt-1 text-base text-[#8c5d3e]">{joinModal.teamTitle}</p>
-
-            <label className="mt-4 block text-sm font-semibold text-[#764121]">Your User ID</label>
-            <input
-              value={joinModal.userId}
-              onChange={(event) =>
-                setJoinModal((prev) => ({ ...prev, userId: event.target.value, error: "" }))
-              }
-              className="mt-1 w-full rounded-xl border border-[#efcfbb] px-4 py-3 outline-none focus:border-[#eb8f3a]"
-              placeholder="Enter your user ID"
-            />
 
             <label className="mt-4 block text-sm font-semibold text-[#764121]">Message to Leader</label>
             <textarea

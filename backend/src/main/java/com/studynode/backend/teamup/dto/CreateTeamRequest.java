@@ -1,7 +1,6 @@
 package com.studynode.backend.teamup.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateTeamRequest(
@@ -15,9 +14,6 @@ public record CreateTeamRequest(
 
         @NotBlank(message = "requiredSkills is required")
         @Size(max = 500, message = "requiredSkills must be at most 500 characters")
-        String requiredSkills,
-
-        @NotNull(message = "createdByUserId is required")
-        Long createdByUserId
+        String requiredSkills
 ) {
 }

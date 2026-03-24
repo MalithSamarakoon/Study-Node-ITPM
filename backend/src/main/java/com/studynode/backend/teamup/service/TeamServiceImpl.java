@@ -17,6 +17,7 @@ import com.studynode.backend.teamup.repository.TeamMemberRepository;
 import com.studynode.backend.teamup.repository.TeamRepository;
 import com.studynode.backend.teamup.repository.UserRepository;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
@@ -47,16 +48,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamResponse createTeam(CreateTeamRequest request) {
-        User creator = userRepository.findById(request.createdByUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Creator user not found"));
-
-        if (creator.getName() == null || creator.getName().isBlank()) {
-            throw new BadRequestException("Creator user is invalid");
-        }
-
-        if (creator.getRole() != UserRole.STUDENT) {
-            throw new BadRequestException("Only students can create teams");
-        }
+        User creator = resolveCreatorUser();
 
         Team team = new Team();
         team.setTitle(request.title());
@@ -67,6 +59,26 @@ public class TeamServiceImpl implements TeamService {
 
         Team saved = teamRepository.save(team);
         return toTeamResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TeamResponse> getJoinedTeams(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        List<TeamMember> memberships = teamMemberRepository.findByUserIdAndStatusIn(
+                userId,
+                List.of(MembershipStatus.PENDING, MembershipStatus.APPROVED));
+
+        Map<Long, TeamResponse> uniqueTeams = new LinkedHashMap<>();
+        for (TeamMember membership : memberships) {
+            Team team = membership.getTeam();
+            uniqueTeams.putIfAbsent(team.getId(), toTeamResponse(team));
+        }
+
+        return uniqueTeams.values().stream().toList();
     }
 
     @Override
@@ -87,6 +99,23 @@ public class TeamServiceImpl implements TeamService {
     public TeamResponse getTeamById(Long teamId) {
         Team team = findTeamOrThrow(teamId);
         return toTeamResponse(team);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TeamResponse> getCreatedTeams(Long userId, String skill) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        List<Team> teams;
+        if (skill != null && !skill.isBlank()) {
+            teams = teamRepository.findByCreatedByIdAndRequiredSkillsContainingIgnoreCase(userId, skill.trim());
+        } else {
+            teams = teamRepository.findByCreatedById(userId);
+        }
+
+        return teams.stream().map(this::toTeamResponse).toList();
     }
 
     @Override
@@ -234,6 +263,17 @@ public class TeamServiceImpl implements TeamService {
     private Team findTeamOrThrow(Long teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+    }
+
+    private User resolveCreatorUser() {
+        return userRepository.findFirstByRoleOrderByIdAsc(UserRole.STUDENT)
+                .orElseGet(() -> {
+                    User fallback = new User();
+                    fallback.setName("TeamUp Creator");
+                    fallback.setEmail("teamup-creator@local");
+                    fallback.setRole(UserRole.STUDENT);
+                    return userRepository.save(fallback);
+                });
     }
 
     private TeamResponse toTeamResponse(Team team) {

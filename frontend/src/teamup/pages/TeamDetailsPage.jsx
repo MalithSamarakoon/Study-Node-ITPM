@@ -11,17 +11,16 @@ import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
 import { formatTeamStatus, parseTeamMeta, splitSkills } from "../utils/teamMeta.js";
 
 function TeamDetailsPage() {
+  const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+
   const { id } = useParams();
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [joinModalOpen, setJoinModalOpen] = useState(false);
-  const [joinForm, setJoinForm] = useState({ userId: "", message: "Hi, I have SpringBoot experience" });
+  const [joinForm, setJoinForm] = useState({ message: "Hi, I have SpringBoot experience" });
   const [joinMessage, setJoinMessage] = useState({ error: "", success: "" });
-  const [viewerUserId, setViewerUserId] = useState(
-    () => window.localStorage.getItem("teamup.viewerUserId") || "",
-  );
   const [joining, setJoining] = useState(false);
   const [updatingMemberId, setUpdatingMemberId] = useState(null);
   const [isMockMode, setIsMockMode] = useState(false);
@@ -66,11 +65,6 @@ function TeamDetailsPage() {
   async function handleJoinRequest(event) {
     event.preventDefault();
 
-    if (!joinForm.userId.trim() || Number.isNaN(Number(joinForm.userId))) {
-      setJoinMessage({ error: "Valid user ID is required.", success: "" });
-      return;
-    }
-
     if (!joinForm.message.trim()) {
       setJoinMessage({ error: "Message is required.", success: "" });
       return;
@@ -85,21 +79,21 @@ function TeamDetailsPage() {
           ...prev,
           {
             id: nextId,
-            userId: Number(joinForm.userId),
-            userName: `Student ${joinForm.userId}`,
+            userId: Number(currentUserId),
+            userName: `Student ${currentUserId}`,
             roleInTeam: joinForm.message.trim(),
             status: "PENDING",
           },
         ]);
       } else {
         await joinTeam(id, {
-          userId: Number(joinForm.userId),
+          userId: Number(currentUserId),
           roleInTeam: joinForm.message.trim(),
         });
       }
 
       setJoinMessage({ error: "", success: "Request Pending" });
-      setJoinForm({ userId: "", message: "Hi, I have SpringBoot experience" });
+      setJoinForm({ message: "Hi, I have SpringBoot experience" });
       setJoinModalOpen(false);
 
       if (!isMockMode) {
@@ -159,7 +153,7 @@ function TeamDetailsPage() {
   const currentMembers = members.filter((member) => member.status === "APPROVED");
   const pendingMembers = members.filter((member) => member.status === "PENDING");
   const uiStatus = formatTeamStatus(team.status, team.memberCount, meta.maxMembers);
-  const isLeaderView = viewerUserId.trim() && String(team.createdByUserId) === viewerUserId.trim();
+  const isLeaderView = String(team.createdByUserId) === currentUserId;
 
   return (
     <section className="space-y-5 text-[#6a3a1a]">
@@ -242,17 +236,6 @@ function TeamDetailsPage() {
         ) : null}
 
         <div className="mt-7 flex flex-wrap items-center gap-3">
-          <input
-            value={viewerUserId}
-            onChange={(event) => {
-              const value = event.target.value;
-              setViewerUserId(value);
-              window.localStorage.setItem("teamup.viewerUserId", value);
-            }}
-            className="rounded-xl border border-[#e5c5ad] px-4 py-2.5 text-sm outline-none focus:border-[#eb8f3a]"
-            placeholder="Set your user ID (for leader view)"
-          />
-
           <button
             onClick={() => setJoinModalOpen(true)}
             className="rounded-xl bg-[#ef8f31] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21]"
@@ -270,13 +253,6 @@ function TeamDetailsPage() {
           <div className="w-full max-w-xl rounded-3xl border border-[#ebc4a9] bg-[#fffdfb] p-6">
             <h3 className="text-2xl font-bold text-[#7c3f16]">Message to Leader</h3>
             <form className="mt-3 space-y-3" onSubmit={handleJoinRequest}>
-              <input
-                name="userId"
-                value={joinForm.userId}
-                onChange={handleJoinChange}
-                placeholder="Your User ID"
-                className="w-full rounded-xl border border-[#efcfbb] px-4 py-3 outline-none focus:border-[#eb8f3a]"
-              />
               <textarea
                 name="message"
                 value={joinForm.message}

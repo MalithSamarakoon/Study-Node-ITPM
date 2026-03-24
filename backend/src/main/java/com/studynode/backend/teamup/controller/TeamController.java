@@ -40,6 +40,17 @@ public class TeamController {
         return ResponseEntity.ok(teamService.getTeams(skill));
     }
 
+    @GetMapping("/created")
+    public ResponseEntity<List<TeamResponse>> getCreatedTeams(@RequestParam Long userId,
+                                                              @RequestParam(required = false) String skill) {
+        return ResponseEntity.ok(teamService.getCreatedTeams(userId, skill));
+    }
+
+    @GetMapping("/joined")
+    public ResponseEntity<List<TeamResponse>> getJoinedTeams(@RequestParam Long userId) {
+        return ResponseEntity.ok(teamService.getJoinedTeams(userId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<TeamResponse> getTeamById(@PathVariable Long id) {
         return ResponseEntity.ok(teamService.getTeamById(id));

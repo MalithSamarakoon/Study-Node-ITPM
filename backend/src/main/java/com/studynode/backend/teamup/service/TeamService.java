@@ -15,6 +15,10 @@ public interface TeamService {
 
     TeamResponse getTeamById(Long teamId);
 
+    List<TeamResponse> getCreatedTeams(Long userId, String skill);
+
+    List<TeamResponse> getJoinedTeams(Long userId);
+
     String requestToJoin(Long teamId, JoinTeamRequest request);
 
     TeamResponse approveTeam(Long teamId);

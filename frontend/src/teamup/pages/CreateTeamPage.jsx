@@ -10,7 +10,6 @@ const initialForm = {
   skillInput: "",
   skills: ["Java", "SpringBoot"],
   deadline: "2026-03-15",
-  createdByUserId: "1",
 };
 
 function CreateTeamPage() {
@@ -72,12 +71,6 @@ function CreateTeamPage() {
       nextErrors.requiredSkills = "Required skills are required";
     }
 
-    if (!form.createdByUserId.trim()) {
-      nextErrors.createdByUserId = "Creator user ID is required";
-    } else if (Number.isNaN(Number(form.createdByUserId))) {
-      nextErrors.createdByUserId = "Creator user ID must be a number";
-    }
-
     return nextErrors;
   }
 
@@ -102,7 +95,6 @@ function CreateTeamPage() {
           form.deadline,
         ),
         requiredSkills: form.skills.join(", "),
-        createdByUserId: Number(form.createdByUserId),
       });
 
       setForm(initialForm);
@@ -271,26 +263,6 @@ function CreateTeamPage() {
           </div>
           {errors.requiredSkills ? (
             <p className="mt-1 text-sm text-rose-600">{errors.requiredSkills}</p>
-          ) : null}
-        </div>
-
-        <div>
-          <label
-            htmlFor="createdByUserId"
-            className="block text-lg font-semibold text-[#704021]"
-          >
-            Creator User ID
-          </label>
-          <input
-            id="createdByUserId"
-            name="createdByUserId"
-            value={form.createdByUserId}
-            onChange={handleChange}
-            className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
-            placeholder="1"
-          />
-          {errors.createdByUserId ? (
-            <p className="mt-1 text-sm text-rose-600">{errors.createdByUserId}</p>
           ) : null}
         </div>
 
