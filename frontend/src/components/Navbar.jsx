@@ -54,7 +54,7 @@ const Navbar = () => {
                         </div>
                     )}
 
-                    {/* Profile Dropdown logic */}
+
                     {showDropdown && (
                         <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
                             <ul className="py-2">
@@ -71,7 +71,7 @@ const Navbar = () => {
                     <li className="hover:text-purple-600 cursor-pointer">About</li>
                     <li className="hover:text-purple-600 cursor-pointer">Modules</li>
 
-                    {/* Link to Blog Page */}
+
                     <Link to="/blogs">
                         <li className="hover:text-purple-600 cursor-pointer">Blogs</li>
                     </Link>

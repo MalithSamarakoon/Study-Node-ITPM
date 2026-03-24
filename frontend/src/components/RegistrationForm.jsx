@@ -4,6 +4,16 @@ import axios from 'axios';
 import {useNavigate} from "react-router-dom";
 
 const RegistrationForm = () => {
+
+    const initialState = {
+        username: '',
+        studentId: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: ''
+    }
+
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: '',
@@ -103,7 +113,8 @@ const RegistrationForm = () => {
                 setTimeout(() => {
                     navigate('/');
                 }, 2000);
-                setFormData({username: '', studentId: '', email: '', phone: '', password: ''});
+                setFormData(initialState);
+                setErrors({});
             }catch(error){
                 const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
                 toast.error(errorMessage);

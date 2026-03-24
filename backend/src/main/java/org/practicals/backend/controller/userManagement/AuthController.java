@@ -6,8 +6,12 @@ import org.practicals.backend.service.userManagement.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(
+        origins = "http://localhost:5173",
+        allowedHeaders = "*")
 public class AuthController {
     private final UserService userService;
 
