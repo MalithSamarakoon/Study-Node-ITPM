@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
+import {useNavigate} from "react-router-dom";
 
 const RegistrationForm = () => {
-
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: '',
         studentId: '',
@@ -49,7 +50,16 @@ const RegistrationForm = () => {
                 };
 
                 await axios.post('http://localhost:8080/api/auth/register', payload);
-                toast.success("Account created successfully!")
+
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('user', JSON.stringify(response.data));
+                window.dispatchEvent(new Event("authChange"));
+
+                toast.success("Account created successfully!");
+
+                setTimeout(() => {
+                    navigate('/');
+                }, 2000);
                 setFormData({username: '', studentId: '', email: '', phone: '', password: ''});
             }catch(error){
                 const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
@@ -141,7 +151,7 @@ const RegistrationForm = () => {
                 disabled={!Object.values(validation).every(Boolean) || !passwordsMatch}
                 className="mt-4 w-full bg-[#a855f7] hover:bg-[#9333ea] disabled:bg-gray-300 text-white font-bold py-3 px-6 rounded-2xl shadow-md transform active:scale-95 transition-all cursor-pointer"
             >
-                Register
+                {loading ? "Registering..." : "Register"}
             </button>
         </form>
     );
