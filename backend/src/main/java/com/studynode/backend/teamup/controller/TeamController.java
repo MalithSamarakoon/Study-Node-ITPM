@@ -3,7 +3,9 @@ package com.studynode.backend.teamup.controller;
 import com.studynode.backend.teamup.dto.CreateTeamRequest;
 import com.studynode.backend.teamup.dto.JoinTeamRequest;
 import com.studynode.backend.teamup.dto.TeamMemberResponse;
+import com.studynode.backend.teamup.dto.TeamMembershipStatusResponse;
 import com.studynode.backend.teamup.dto.TeamResponse;
+import com.studynode.backend.teamup.dto.UpdateTeamRequest;
 import com.studynode.backend.teamup.dto.UpdateTeamStatusRequest;
 import com.studynode.backend.teamup.service.TeamService;
 import jakarta.validation.Valid;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +52,11 @@ public class TeamController {
     @GetMapping("/joined")
     public ResponseEntity<List<TeamResponse>> getJoinedTeams(@RequestParam Long userId) {
         return ResponseEntity.ok(teamService.getJoinedTeams(userId));
+    }
+
+    @GetMapping("/membership-statuses")
+    public ResponseEntity<List<TeamMembershipStatusResponse>> getMembershipStatuses(@RequestParam Long userId) {
+        return ResponseEntity.ok(teamService.getMembershipStatuses(userId));
     }
 
     @GetMapping("/{id}")
@@ -97,5 +105,17 @@ public class TeamController {
     public ResponseEntity<TeamMemberResponse> rejectMembershipRequest(@PathVariable Long id,
                                                                       @PathVariable Long memberId) {
         return ResponseEntity.ok(teamService.rejectMembershipRequest(id, memberId));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTeam(@PathVariable Long id) {
+        teamService.deleteTeam(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TeamResponse> updateTeam(@PathVariable Long id,
+                                                     @Valid @RequestBody UpdateTeamRequest request) {
+        return ResponseEntity.ok(teamService.updateTeam(id, request));
     }
 }

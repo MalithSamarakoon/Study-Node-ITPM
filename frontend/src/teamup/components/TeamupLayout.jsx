@@ -28,6 +28,9 @@ function TeamupLayout() {
             <NavLink to="/teams/my" className={linkClasses}>
               My Teams
             </NavLink>
+            <NavLink to="/teams/status" className={linkClasses}>
+              Team Status
+            </NavLink>
             <NavLink to="/admin/teamup" className={linkClasses}>
               TeamUp Requests
             </NavLink>

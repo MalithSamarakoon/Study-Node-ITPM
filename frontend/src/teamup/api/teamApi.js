@@ -46,6 +46,10 @@ export function getJoinedTeams(userId) {
   return request(`/joined?userId=${encodeURIComponent(userId)}`);
 }
 
+export function getMembershipStatuses(userId) {
+  return request(`/membership-statuses?userId=${encodeURIComponent(userId)}`);
+}
+
 export function getCreatedTeams(userId, skill) {
   const skillQuery = skill ? `&skill=${encodeURIComponent(skill)}` : "";
   return request(`/created?userId=${encodeURIComponent(userId)}${skillQuery}`);
@@ -58,6 +62,13 @@ export function getTeamById(id) {
 export function createTeam(data) {
   return request("", {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateTeam(id, data) {
+  return request(`/${id}`, {
+    method: "PUT",
     body: JSON.stringify(data),
   });
 }
@@ -101,5 +112,11 @@ export function approveMembershipRequest(teamId, memberId) {
 export function rejectMembershipRequest(teamId, memberId) {
   return request(`/${teamId}/members/${memberId}/reject`, {
     method: "PUT",
+  });
+}
+
+export function deleteTeam(id) {
+  return request(`/${id}`, {
+    method: "DELETE",
   });
 }

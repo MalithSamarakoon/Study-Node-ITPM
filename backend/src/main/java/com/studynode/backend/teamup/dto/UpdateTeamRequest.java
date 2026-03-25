@@ -1,10 +1,9 @@
 package com.studynode.backend.teamup.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-public record CreateTeamRequest(
+public record UpdateTeamRequest(
         @NotBlank(message = "title is required")
         @Size(max = 120, message = "title must be at most 120 characters")
         String title,
@@ -15,9 +14,6 @@ public record CreateTeamRequest(
 
         @NotBlank(message = "requiredSkills is required")
         @Size(max = 500, message = "requiredSkills must be at most 500 characters")
-        String requiredSkills,
-
-        @Positive(message = "createdByUserId must be a positive number")
-        Long createdByUserId
+        String requiredSkills
 ) {
 }

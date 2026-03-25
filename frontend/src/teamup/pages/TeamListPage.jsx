@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { getCreatedTeams, getJoinedTeams, joinTeam } from "../api/teamApi.js";
+import { Link, useNavigate } from "react-router-dom";
+import { getCreatedTeams, getJoinedTeams, joinTeam, deleteTeam } from "../api/teamApi.js";
 import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
 import {
   formatTeamStatus,
@@ -10,6 +10,7 @@ import {
 
 function TeamListPage({ onlyMine = false }) {
   const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const navigate = useNavigate();
 
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,12 @@ function TeamListPage({ onlyMine = false }) {
     teamTitle: "",
     message: "Hi, I have SpringBoot experience",
     error: "",
+  });
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    teamId: null,
+    teamTitle: "",
+    deleting: false,
   });
   const [isMockMode, setIsMockMode] = useState(false);
 
@@ -159,6 +166,34 @@ function TeamListPage({ onlyMine = false }) {
     }
   }
 
+  function openDeleteModal(team) {
+    setDeleteModal({
+      open: true,
+      teamId: team.id,
+      teamTitle: team.title,
+      deleting: false,
+    });
+  }
+
+  function closeDeleteModal() {
+    setDeleteModal((prev) => ({ ...prev, open: false }));
+  }
+
+  async function confirmDelete() {
+    setDeleteModal((prev) => ({ ...prev, deleting: true }));
+    try {
+      if (!isMockMode) {
+        await deleteTeam(deleteModal.teamId);
+      }
+      // Remove deleted team from list
+      setTeams((prev) => prev.filter((t) => t.id !== deleteModal.teamId));
+      closeDeleteModal();
+    } catch (deleteError) {
+      alert(deleteError.message || "Failed to delete team.");
+      setDeleteModal((prev) => ({ ...prev, deleting: false }));
+    }
+  }
+
   return (
     <section className="space-y-5 text-[#6a3a1a]">
       <div className="rounded-3xl border border-[#f0d7c5] bg-[#fff8f2] p-5">
@@ -193,13 +228,6 @@ function TeamListPage({ onlyMine = false }) {
           >
             Refresh
           </button>
-
-          <Link
-            to="/teams/new"
-            className="rounded-2xl bg-[#ef8f31] px-5 py-3 text-lg font-semibold text-white shadow-[0_6px_16px_rgba(239,143,49,0.35)] hover:bg-[#e18125]"
-          >
-            + Create Team
-          </Link>
         </div>
 
       </div>
@@ -256,13 +284,31 @@ function TeamListPage({ onlyMine = false }) {
               >
                 View Details
               </Link>
-              <button
-                onClick={() => openJoinModal(team)}
-                disabled={joiningTeamId === team.id}
-                className="rounded-xl bg-[#ef8f31] px-4 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {joiningTeamId === team.id ? "Sending..." : "Request to Join"}
-              </button>
+              {!onlyMine && String(team.createdByUserId) !== currentUserId ? (
+                <button
+                  onClick={() => openJoinModal(team)}
+                  disabled={joiningTeamId === team.id}
+                  className="rounded-xl bg-[#ef8f31] px-4 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {joiningTeamId === team.id ? "Sending..." : "Request to Join"}
+                </button>
+              ) : null}
+              {onlyMine && String(team.createdByUserId) === currentUserId ? (
+                <>
+                  <Link
+                    to={`/teams/${team.id}/edit`}
+                    className="rounded-xl border border-[#daac8c] bg-[#fff1e5] px-4 py-2.5 text-base font-semibold text-[#7e461f] hover:bg-[#ffe0cc]"
+                  >
+                    ✏️ Edit
+                  </Link>
+                  <button
+                    onClick={() => openDeleteModal(team)}
+                    className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-base font-semibold text-rose-700 hover:bg-rose-100"
+                  >
+                    🗑️ Delete
+                  </button>
+                </>
+              ) : null}
             </div>
           </article>
         ))}
@@ -298,6 +344,34 @@ function TeamListPage({ onlyMine = false }) {
                 className="rounded-xl bg-[#ef8f31] px-4 py-2 text-sm font-semibold text-white"
               >
                 Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteModal.open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+          <div className="w-full max-w-xl rounded-3xl border border-rose-300 bg-[#fffdfb] p-6">
+            <h3 className="text-2xl font-bold text-rose-700">Delete Team</h3>
+            <p className="mt-2 text-base text-[#8c5d3e]">
+              Are you sure you want to delete <span className="font-semibold">{deleteModal.teamTitle}</span>? This action cannot be undone.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={closeDeleteModal}
+                disabled={deleteModal.deleting}
+                className="rounded-xl border border-[#d7b69e] px-4 py-2 text-sm font-semibold text-[#7e461f] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteModal.deleting}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleteModal.deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

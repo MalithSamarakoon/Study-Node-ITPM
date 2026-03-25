@@ -5,7 +5,9 @@ import com.studynode.backend.common.exception.ResourceNotFoundException;
 import com.studynode.backend.teamup.dto.CreateTeamRequest;
 import com.studynode.backend.teamup.dto.JoinTeamRequest;
 import com.studynode.backend.teamup.dto.TeamMemberResponse;
+import com.studynode.backend.teamup.dto.TeamMembershipStatusResponse;
 import com.studynode.backend.teamup.dto.TeamResponse;
+import com.studynode.backend.teamup.dto.UpdateTeamRequest;
 import com.studynode.backend.teamup.dto.UpdateTeamStatusRequest;
 import com.studynode.backend.teamup.entity.Team;
 import com.studynode.backend.teamup.entity.TeamMember;
@@ -48,7 +50,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamResponse createTeam(CreateTeamRequest request) {
-        User creator = resolveCreatorUser();
+        User creator = resolveCreatorUser(request.createdByUserId());
 
         Team team = new Team();
         team.setTitle(request.title());
@@ -58,6 +60,14 @@ public class TeamServiceImpl implements TeamService {
         team.setCreatedBy(creator);
 
         Team saved = teamRepository.save(team);
+
+        TeamMember ownerMembership = new TeamMember();
+        ownerMembership.setTeam(saved);
+        ownerMembership.setUser(creator);
+        ownerMembership.setRoleInTeam("Owner");
+        ownerMembership.setStatus(MembershipStatus.APPROVED);
+        teamMemberRepository.save(ownerMembership);
+
         return toTeamResponse(saved);
     }
 
@@ -79,6 +89,24 @@ public class TeamServiceImpl implements TeamService {
         }
 
         return uniqueTeams.values().stream().toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TeamMembershipStatusResponse> getMembershipStatuses(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        return teamMemberRepository.findByUserIdOrderByUpdatedAtDesc(userId)
+                .stream()
+                .map(member -> new TeamMembershipStatusResponse(
+                        member.getTeam().getId(),
+                        member.getTeam().getTitle(),
+                        member.getRoleInTeam(),
+                        member.getStatus(),
+                        member.getUpdatedAt()))
+                .toList();
     }
 
     @Override
@@ -260,12 +288,34 @@ public class TeamServiceImpl implements TeamService {
                 saved.getStatus());
     }
 
+    @Override
+    public void deleteTeam(Long teamId) {
+        Team team = findTeamOrThrow(teamId);
+        teamMemberRepository.deleteByTeamId(teamId);
+        teamRepository.delete(team);
+    }
+
+    @Override
+    public TeamResponse updateTeam(Long teamId, UpdateTeamRequest request) {
+        Team team = findTeamOrThrow(teamId);
+        team.setTitle(request.title());
+        team.setDescription(request.description());
+        team.setRequiredSkills(request.requiredSkills());
+        Team updated = teamRepository.save(team);
+        return toTeamResponse(updated);
+    }
+
     private Team findTeamOrThrow(Long teamId) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
     }
 
-    private User resolveCreatorUser() {
+    private User resolveCreatorUser(Long creatorUserId) {
+        if (creatorUserId != null) {
+            return userRepository.findById(creatorUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Creator user not found"));
+        }
+
         return userRepository.findFirstByRoleOrderByIdAsc(UserRole.STUDENT)
                 .orElseGet(() -> {
                     User fallback = new User();

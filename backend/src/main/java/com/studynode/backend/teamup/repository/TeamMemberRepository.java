@@ -11,7 +11,11 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
 
     Optional<TeamMember> findByTeamIdAndUserId(Long teamId, Long userId);
 
+    List<TeamMember> findByUserIdOrderByUpdatedAtDesc(Long userId);
+
     List<TeamMember> findByUserIdAndStatusIn(Long userId, List<MembershipStatus> statuses);
 
     long countByTeamIdAndStatus(Long teamId, com.studynode.backend.teamup.enums.MembershipStatus status);
+
+    void deleteByTeamId(Long teamId);
 }

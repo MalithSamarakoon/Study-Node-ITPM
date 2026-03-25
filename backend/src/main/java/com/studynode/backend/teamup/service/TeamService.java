@@ -3,7 +3,9 @@ package com.studynode.backend.teamup.service;
 import com.studynode.backend.teamup.dto.CreateTeamRequest;
 import com.studynode.backend.teamup.dto.JoinTeamRequest;
 import com.studynode.backend.teamup.dto.TeamMemberResponse;
+import com.studynode.backend.teamup.dto.TeamMembershipStatusResponse;
 import com.studynode.backend.teamup.dto.TeamResponse;
+import com.studynode.backend.teamup.dto.UpdateTeamRequest;
 import com.studynode.backend.teamup.dto.UpdateTeamStatusRequest;
 import java.util.List;
 
@@ -19,6 +21,8 @@ public interface TeamService {
 
     List<TeamResponse> getJoinedTeams(Long userId);
 
+    List<TeamMembershipStatusResponse> getMembershipStatuses(Long userId);
+
     String requestToJoin(Long teamId, JoinTeamRequest request);
 
     TeamResponse approveTeam(Long teamId);
@@ -27,9 +31,13 @@ public interface TeamService {
 
     TeamResponse updateTeamStatus(Long teamId, UpdateTeamStatusRequest request);
 
+    TeamResponse updateTeam(Long teamId, UpdateTeamRequest request);
+
     List<TeamMemberResponse> getTeamMembers(Long teamId);
 
     TeamMemberResponse approveMembershipRequest(Long teamId, Long memberId);
 
     TeamMemberResponse rejectMembershipRequest(Long teamId, Long memberId);
+
+    void deleteTeam(Long teamId);
 }

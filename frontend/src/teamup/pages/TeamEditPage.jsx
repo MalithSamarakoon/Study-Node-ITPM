@@ -1,33 +1,90 @@
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { createTeam } from "../api/teamApi.js";
-import { buildDescriptionWithMeta } from "../utils/teamMeta.js";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getTeamById, updateTeam } from "../api/teamApi.js";
+import { mockTeams } from "../data/mockTeamupData.js";
+import { buildDescriptionWithMeta, parseTeamMeta } from "../utils/teamMeta.js";
 
-const initialForm = {
-  title: "AI Research Project",
-  type: "PROJECT",
-  description: "We are building an AI LMS chatbot and need backend + ML members.",
-  maxMembers: "5",
-  skillInput: "",
-  skills: ["Java", "SpringBoot"],
-  deadline: "2026-03-15",
-};
-
-function CreateTeamPage() {
+function TeamEditPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const currentUserId = Number(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
 
-  const [form, setForm] = useState(initialForm);
+  const [team, setTeam] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    title: "",
+    type: "PROJECT",
+    description: "",
+    maxMembers: "5",
+    skillInput: "",
+    skills: [],
+    deadline: "",
+  });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [serverMessage, setServerMessage] = useState("");
+  const [isMockMode, setIsMockMode] = useState(false);
+
+  useEffect(() => {
+    async function loadTeamDetails() {
+      setLoading(true);
+      try {
+        const data = await getTeamById(id);
+        setTeam(data);
+        const meta = parseTeamMeta(data.description);
+
+        setForm({
+          title: data.title,
+          type: meta.type || "PROJECT",
+          description: meta.cleanDescription || "",
+          maxMembers: String(meta.maxMembers || "5"),
+          deadline: meta.deadline || "",
+          skillInput: "",
+          skills: data.requiredSkills.split(",").map((s) => s.trim()),
+        });
+        setIsMockMode(false);
+      } catch {
+        const mockTeam = mockTeams.find((t) => String(t.id) === String(id));
+        if (mockTeam) {
+          const meta = parseTeamMeta(mockTeam.description);
+          setTeam(mockTeam);
+          setForm({
+            title: mockTeam.title,
+            type: meta.type || "PROJECT",
+            description: meta.cleanDescription || "",
+            maxMembers: String(meta.maxMembers || "5"),
+            deadline: meta.deadline || "",
+            skillInput: "",
+            skills: mockTeam.requiredSkills.split(",").map((s) => s.trim()),
+          });
+          setIsMockMode(true);
+        } else {
+          setError("Team not found.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTeamDetails();
+  }, [id]);
+
+  if (loading) {
+    return <p className="text-sm text-slate-700">Loading team details...</p>;
+  }
+
+  if (!team) {
+    return <p className="text-sm text-slate-600">Team not found.</p>;
+  }
+
+  if (String(team.createdByUserId) !== currentUserId) {
+    return <p className="text-sm text-rose-600">You don't have permission to edit this team.</p>;
+  }
 
   function addSkill(rawValue) {
     const value = rawValue.trim();
-    if (!value) {
-      return;
-    }
+    if (!value) return;
 
     setForm((prev) => {
       if (prev.skills.some((skill) => skill.toLowerCase() === value.toLowerCase())) {
@@ -52,7 +109,6 @@ function CreateTeamPage() {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
-    setSuccessMessage("");
     setServerMessage("");
   }
 
@@ -90,7 +146,7 @@ function CreateTeamPage() {
     setSubmitting(true);
 
     try {
-      await createTeam({
+      const updateData = {
         title: form.title.trim(),
         description: buildDescriptionWithMeta(
           form.description,
@@ -99,33 +155,24 @@ function CreateTeamPage() {
           form.deadline,
         ),
         requiredSkills: form.skills.join(", "),
-        createdByUserId: currentUserId,
-      });
+      };
 
-      setForm(initialForm);
-      setErrors({});
-      setSuccessMessage("Team created successfully.");
-      setServerMessage("");
-      
-      // Navigate to All Teams after successful creation
-      setTimeout(() => navigate("/teams"), 1000);
-    } catch (error) {
-      if (error?.payload?.message && typeof error.payload.message === "object") {
-        setErrors((prev) => ({ ...prev, ...error.payload.message }));
-      } else {
-        setServerMessage(error.message || "Failed to create team.");
+      if (!isMockMode) {
+        await updateTeam(id, updateData);
       }
-    } finally {
+      
+      // Navigate to All Teams after successful update
+      navigate("/teams");
+    } catch (err) {
+      setServerMessage(err.message || "Failed to update team.");
       setSubmitting(false);
     }
   }
 
   return (
     <section className="rounded-3xl border border-[#e7cab5] bg-[#fffdfb] p-6 text-[#6a3c1c] shadow-[0_8px_20px_rgba(123,63,23,0.06)] sm:p-8">
-      <h2 className="text-5xl font-extrabold text-[#7b3f17]">Create a New Team</h2>
-      <p className="mt-2 text-xl text-[#885534]">
-        Fill in the details to create a new project team.
-      </p>
+      <h2 className="text-5xl font-extrabold text-[#7b3f17]">Edit Team: {team.title}</h2>
+      <p className="mt-2 text-xl text-[#885534]">Update the team details.</p>
 
       <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
         <div>
@@ -170,10 +217,7 @@ function CreateTeamPage() {
         </div>
 
         <div>
-          <label
-            htmlFor="description"
-            className="block text-lg font-semibold text-[#704021]"
-          >
+          <label htmlFor="description" className="block text-lg font-semibold text-[#704021]">
             Description
           </label>
           <textarea
@@ -192,10 +236,7 @@ function CreateTeamPage() {
 
         <div className="grid gap-5 md:grid-cols-2">
           <div>
-            <label
-              htmlFor="maxMembers"
-              className="block text-lg font-semibold text-[#704021]"
-            >
+            <label htmlFor="maxMembers" className="block text-lg font-semibold text-[#704021]">
               Max Members
             </label>
             <input
@@ -212,10 +253,7 @@ function CreateTeamPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="deadline"
-              className="block text-lg font-semibold text-[#704021]"
-            >
+            <label htmlFor="deadline" className="block text-lg font-semibold text-[#704021]">
               Deadline (optional)
             </label>
             <input
@@ -275,18 +313,26 @@ function CreateTeamPage() {
         </div>
 
         {serverMessage ? <p className="text-sm text-rose-600">{serverMessage}</p> : null}
-        {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="inline-flex items-center rounded-xl bg-[#ef8f31] px-6 py-3 text-lg font-semibold text-white transition hover:bg-[#dd7f23] disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {submitting ? "Creating..." : "Create Team"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex items-center rounded-xl bg-[#ef8f31] px-6 py-3 text-lg font-semibold text-white transition hover:bg-[#dd7f23] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {submitting ? "Saving..." : "Save Changes"}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/teams/${id}`)}
+            className="inline-flex items-center rounded-xl border border-[#d7b69e] px-6 py-3 text-lg font-semibold text-[#8a512a]"
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </section>
   );
 }
 
-export default CreateTeamPage;
+export default TeamEditPage;

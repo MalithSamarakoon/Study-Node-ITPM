@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   approveMembershipRequest,
   getTeamById,
@@ -12,6 +12,7 @@ import { formatTeamStatus, parseTeamMeta, splitSkills } from "../utils/teamMeta.
 
 function TeamDetailsPage() {
   const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const navigate = useNavigate();
 
   const { id } = useParams();
   const [team, setTeam] = useState(null);
@@ -235,14 +236,16 @@ function TeamDetailsPage() {
           </div>
         ) : null}
 
-        <div className="mt-7 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setJoinModalOpen(true)}
-            className="rounded-xl bg-[#ef8f31] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21]"
-          >
-            Request to Join
-          </button>
-        </div>
+        {!isLeaderView ? (
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setJoinModalOpen(true)}
+              className="rounded-xl bg-[#ef8f31] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21]"
+            >
+              Request to Join
+            </button>
+          </div>
+        ) : null}
 
         {joinMessage.success ? <p className="mt-3 text-base font-semibold text-amber-700">{joinMessage.success}</p> : null}
         {joinMessage.error ? <p className="mt-3 text-base text-rose-700">{joinMessage.error}</p> : null}
