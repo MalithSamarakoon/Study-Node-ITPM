@@ -30,11 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class TeamServiceImpl implements TeamService {
 
     private static final Map<TeamStatus, EnumSet<TeamStatus>> ALLOWED_TRANSITIONS = Map.of(
-            TeamStatus.PENDING, EnumSet.of(TeamStatus.APPROVED, TeamStatus.REJECTED),
+            TeamStatus.PENDING, EnumSet.of(TeamStatus.APPROVED, TeamStatus.REJECTED, TeamStatus.CLOSED),
             TeamStatus.APPROVED, EnumSet.of(TeamStatus.ACTIVE, TeamStatus.CLOSED),
             TeamStatus.ACTIVE, EnumSet.of(TeamStatus.CLOSED),
             TeamStatus.REJECTED, EnumSet.noneOf(TeamStatus.class),
-            TeamStatus.CLOSED, EnumSet.noneOf(TeamStatus.class)
+            TeamStatus.CLOSED, EnumSet.of(TeamStatus.ACTIVE)
     );
 
     private final TeamRepository teamRepository;
@@ -150,20 +150,8 @@ public class TeamServiceImpl implements TeamService {
     public String requestToJoin(Long teamId, JoinTeamRequest request) {
         Team team = findTeamOrThrow(teamId);
 
-        if (team.getStatus() == TeamStatus.CLOSED) {
-            throw new BadRequestException("Cannot join a closed team");
-        }
-
-        if (team.getStatus() != TeamStatus.APPROVED && team.getStatus() != TeamStatus.ACTIVE) {
-            throw new BadRequestException("Join requests are allowed only for approved or active teams");
-        }
-
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (user.getRole() != UserRole.STUDENT) {
-            throw new BadRequestException("Only students can request to join teams");
-        }
 
         if (teamMemberRepository.findByTeamIdAndUserId(teamId, user.getId()).isPresent()) {
             throw new BadRequestException("Join request already exists for this user");

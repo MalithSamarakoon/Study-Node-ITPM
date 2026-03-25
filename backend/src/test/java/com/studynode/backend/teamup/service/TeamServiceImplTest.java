@@ -12,6 +12,7 @@ import com.studynode.backend.teamup.dto.CreateTeamRequest;
 import com.studynode.backend.teamup.dto.JoinTeamRequest;
 import com.studynode.backend.teamup.dto.TeamMemberResponse;
 import com.studynode.backend.teamup.dto.TeamResponse;
+import com.studynode.backend.teamup.dto.UpdateTeamStatusRequest;
 import com.studynode.backend.teamup.entity.Team;
 import com.studynode.backend.teamup.entity.TeamMember;
 import com.studynode.backend.teamup.entity.User;
@@ -87,6 +88,36 @@ class TeamServiceImplTest {
     }
 
     @Test
+    void joinClosedTeamSuccessfully() {
+        Team team = buildTeam(8L, TeamStatus.CLOSED, buildUser(1L, "Owner", UserRole.STUDENT));
+        User member = buildUser(3L, "Member", UserRole.STUDENT);
+
+        when(teamRepository.findById(8L)).thenReturn(Optional.of(team));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(member));
+        when(teamMemberRepository.findByTeamIdAndUserId(8L, 3L)).thenReturn(Optional.empty());
+
+        String result = teamService.requestToJoin(8L, new JoinTeamRequest(3L, "QA Engineer"));
+
+        assertEquals("Join request submitted successfully", result);
+        verify(teamMemberRepository).save(any(TeamMember.class));
+    }
+
+    @Test
+    void joinAllowedForNonStudentRole() {
+        Team team = buildTeam(9L, TeamStatus.ACTIVE, buildUser(1L, "Owner", UserRole.STUDENT));
+        User member = buildUser(4L, "AdminUser", UserRole.ADMIN);
+
+        when(teamRepository.findById(9L)).thenReturn(Optional.of(team));
+        when(userRepository.findById(4L)).thenReturn(Optional.of(member));
+        when(teamMemberRepository.findByTeamIdAndUserId(9L, 4L)).thenReturn(Optional.empty());
+
+        String result = teamService.requestToJoin(9L, new JoinTeamRequest(4L, "Observer"));
+
+        assertEquals("Join request submitted successfully", result);
+        verify(teamMemberRepository).save(any(TeamMember.class));
+    }
+
+    @Test
     void rejectDuplicateJoin() {
         Team team = buildTeam(7L, TeamStatus.APPROVED, buildUser(1L, "Owner", UserRole.STUDENT));
         User member = buildUser(2L, "Member", UserRole.STUDENT);
@@ -139,6 +170,30 @@ class TeamServiceImplTest {
 
         assertThrows(ResourceNotFoundException.class,
                 () -> teamService.requestToJoin(7L, new JoinTeamRequest(404L, "UI Designer")));
+    }
+
+    @Test
+    void reopenClosedTeamToActive() {
+        Team team = buildTeam(7L, TeamStatus.CLOSED, buildUser(1L, "Owner", UserRole.STUDENT));
+
+        when(teamRepository.findById(7L)).thenReturn(Optional.of(team));
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TeamResponse response = teamService.updateTeamStatus(7L, new UpdateTeamStatusRequest(TeamStatus.ACTIVE));
+
+        assertEquals(TeamStatus.ACTIVE, response.status());
+    }
+
+    @Test
+    void closePendingTeamSuccessfully() {
+        Team team = buildTeam(11L, TeamStatus.PENDING, buildUser(1L, "Owner", UserRole.STUDENT));
+
+        when(teamRepository.findById(11L)).thenReturn(Optional.of(team));
+        when(teamRepository.save(any(Team.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        TeamResponse response = teamService.updateTeamStatus(11L, new UpdateTeamStatusRequest(TeamStatus.CLOSED));
+
+        assertEquals(TeamStatus.CLOSED, response.status());
     }
 
     private User buildUser(Long id, String name, UserRole role) {

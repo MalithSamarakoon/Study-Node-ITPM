@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getJoinedTeams, getTeams, joinTeam, deleteTeam } from "../api/teamApi.js";
+import {
+  deleteTeam,
+  getJoinedTeams,
+  getTeams,
+  joinTeam,
+  updateTeamStatus,
+} from "../api/teamApi.js";
 import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 import {
@@ -21,6 +27,7 @@ function TeamListPage({ onlyMine = false }) {
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [joiningTeamId, setJoiningTeamId] = useState(null);
   const [requestPendingIds, setRequestPendingIds] = useState({});
+  const [statusUpdatingTeamId, setStatusUpdatingTeamId] = useState(null);
   const [joinModal, setJoinModal] = useState({
     open: false,
     teamId: null,
@@ -190,6 +197,19 @@ function TeamListPage({ onlyMine = false }) {
     }
   }
 
+  async function handleOwnerStatusToggle(teamId, nextStatus) {
+    setStatusUpdatingTeamId(teamId);
+    setError("");
+    try {
+      await updateTeamStatus(teamId, nextStatus);
+      await loadTeams("");
+    } catch (statusError) {
+      setError(statusError.message || "Failed to update team status.");
+    } finally {
+      setStatusUpdatingTeamId(null);
+    }
+  }
+
   return (
     <section className="space-y-5 text-[#6a3a1a]">
       <div className="rounded-3xl border border-[#f0d7c5] bg-[#fff8f2] p-5">
@@ -238,7 +258,12 @@ function TeamListPage({ onlyMine = false }) {
       ) : null}
 
       <div className="grid gap-4">
-        {list.map((team) => (
+        {list.map((team) => {
+          const isOwner = onlyMine && String(team.createdByUserId) === currentUserId;
+          const isOpen = team.status !== "CLOSED";
+          const canToggleStatus = ["PENDING", "APPROVED", "ACTIVE", "CLOSED"].includes(team.status);
+
+          return (
           <article
             key={team.id}
             className="rounded-3xl border border-[#e7c8b2] bg-[#fffdfb] p-6 shadow-[0_8px_18px_rgba(126,59,18,0.06)]"
@@ -257,11 +282,30 @@ function TeamListPage({ onlyMine = false }) {
                 <p className="text-lg font-semibold text-[#9c4f1b]">Status: {team.cardStatus}</p>
               </div>
 
-              {requestPendingIds[team.id] ? (
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
-                  Request Pending
-                </span>
-              ) : null}
+              <div className="flex items-center gap-2">
+                {requestPendingIds[team.id] ? (
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
+                    Request Pending
+                  </span>
+                ) : null}
+                {isOwner ? (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isOpen}
+                    onClick={() => handleOwnerStatusToggle(team.id, isOpen ? "CLOSED" : "ACTIVE")}
+                    disabled={statusUpdatingTeamId === team.id || !canToggleStatus}
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#d8b89f] bg-[#fff7f0] px-3 py-2 text-sm font-semibold text-[#7e461f] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <span className={`relative h-6 w-11 rounded-full transition ${isOpen ? "bg-emerald-500" : "bg-slate-300"}`}>
+                      <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${isOpen ? "translate-x-5" : "translate-x-0"}`} />
+                    </span>
+                    <span>
+                      {statusUpdatingTeamId === team.id ? "Updating..." : isOpen ? "Open" : "Closed"}
+                    </span>
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className="my-4 border-t border-[#efdfd2]" />
@@ -289,7 +333,7 @@ function TeamListPage({ onlyMine = false }) {
                   {joiningTeamId === team.id ? "Sending..." : "Request to Join"}
                 </button>
               ) : null}
-              {onlyMine && String(team.createdByUserId) === currentUserId ? (
+              {isOwner ? (
                 <>
                   <Link
                     to={`/teams/${team.id}/edit`}
@@ -307,7 +351,8 @@ function TeamListPage({ onlyMine = false }) {
               ) : null}
             </div>
           </article>
-        ))}
+        );
+      })}
       </div>
 
       {joinModal.open ? (

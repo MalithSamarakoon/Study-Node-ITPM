@@ -1,124 +1,107 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMembershipStatuses } from "../api/teamApi.js";
+import { getCreatedTeams, getTeamMembers } from "../api/teamApi.js";
 import { useAuth } from "../../auth/AuthContext.jsx";
 
 function TeamStatusPage() {
   const { user } = useAuth();
   const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
-  const [statuses, setStatuses] = useState([]);
+  const [teamsWithMembers, setTeamsWithMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let alive = true;
+  const loadOwnerTeamMembers = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
-    async function loadStatuses() {
-      setLoading(true);
-      setError("");
+    try {
+      const ownedTeams = await getCreatedTeams(currentUserId);
+      const teamsData = await Promise.all(
+        ownedTeams.map(async (team) => {
+          const members = await getTeamMembers(team.id);
+          return {
+            teamId: team.id,
+            teamTitle: team.title,
+            teamStatus: team.status,
+            members: members.filter((member) => member.status === "APPROVED"),
+          };
+        }),
+      );
 
-      try {
-        const data = await getMembershipStatuses(currentUserId);
-        if (!alive) {
-          return;
-        }
-
-        const requestedStatuses = data.filter((item) => item.roleInTeam !== "Owner");
-        setStatuses(requestedStatuses);
-      } catch {
-        if (alive) {
-          setStatuses([]);
-          setError("Unable to load request statuses right now.");
-        }
-      } finally {
-        if (alive) {
-          setLoading(false);
-        }
-      }
+      setTeamsWithMembers(teamsData);
+    } catch {
+      setTeamsWithMembers([]);
+      setError("Unable to load your team members right now.");
+    } finally {
+      setLoading(false);
     }
-
-    loadStatuses();
-
-    return () => {
-      alive = false;
-    };
   }, [currentUserId]);
 
-  const statusColor = {
-    PENDING: {
-      bg: "bg-amber-50",
-      badge: "text-amber-700 bg-amber-100",
-      icon: "⏳",
-    },
-    APPROVED: {
-      bg: "bg-emerald-50",
-      badge: "text-emerald-700 bg-emerald-100",
-      icon: "✅",
-    },
-    REJECTED: {
-      bg: "bg-rose-50",
-      badge: "text-rose-700 bg-rose-100",
-      icon: "❌",
-    },
-  };
+  useEffect(() => {
+    loadOwnerTeamMembers();
+  }, [loadOwnerTeamMembers]);
 
   if (loading) {
-    return <p className="text-sm text-slate-700">Loading team statuses...</p>;
+    return <p className="text-sm text-slate-700">Loading team members...</p>;
   }
 
   return (
     <section className="space-y-5 text-[#6a3a1a]">
       <div className="rounded-3xl border border-[#f0d7c5] bg-[#fff8f2] p-5">
-        <h2 className="text-4xl font-extrabold text-[#7f3f16]">Team Requests Status</h2>
+        <h2 className="text-4xl font-extrabold text-[#7f3f16]">My Team Members</h2>
         <p className="mt-2 text-lg text-[#8d5a39]">
-          View the status of all your team join requests.
+          View members of teams you own.
         </p>
       </div>
 
       {error ? <p className="text-base text-rose-700">{error}</p> : null}
 
-      {statuses.length === 0 ? (
+      {teamsWithMembers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[#dbb89f] bg-[#fffdfb] p-5 text-base text-[#8d5a39]">
-          No join requests yet. Request to join teams on the{" "}
-          <Link to="/teams" className="font-semibold text-[#ef8f31] hover:underline">
-            All Teams
+          You do not own any teams yet. Create one on the{" "}
+          <Link to="/teams/new" className="font-semibold text-[#ef8f31] hover:underline">
+            Create Team
           </Link>{" "}
           page.
         </div>
       ) : (
         <div className="grid gap-4">
-          {statuses.map((item) => {
-            const colors = statusColor[item.membershipStatus] || statusColor.PENDING;
+          {teamsWithMembers.map((team) => {
             return (
               <article
-                key={`${item.teamId}-${item.roleInTeam}-${item.updatedAt}`}
-                className={`rounded-3xl border border-[#e7c8b2] ${colors.bg} p-6 shadow-[0_8px_18px_rgba(126,59,18,0.06)]`}
+                key={team.teamId}
+                className="rounded-3xl border border-[#e7c8b2] bg-[#fffdfb] p-6 shadow-[0_8px_18px_rgba(126,59,18,0.06)]"
               >
-                <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                   <div>
-                    <h3 className="text-2xl font-bold text-[#7b3f17]">{item.teamTitle}</h3>
-                    <p className="mt-2 text-base text-[#85522f]">Your Role: {item.roleInTeam}</p>
+                    <h3 className="text-2xl font-bold text-[#7b3f17]">{team.teamTitle}</h3>
+                    <p className="mt-2 text-base text-[#85522f]">Status: {team.teamStatus}</p>
                   </div>
 
-                  <div className="flex flex-col items-end gap-2">
-                    <div className={`inline-flex items-center gap-2 rounded-full ${colors.badge} px-4 py-2`}>
-                      <span className="text-xl">{colors.icon}</span>
-                      <span className="text-sm font-bold">{item.membershipStatus}</span>
-                    </div>
-                    <p className="text-xs text-[#8f5b39]">
-                      Updated:{" "}
-                      {new Date(item.updatedAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
+                  <div className="rounded-full bg-[#fff1e5] px-4 py-2 text-sm font-semibold text-[#8f5f41]">
+                    Members: {team.members.length}
                   </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {team.members.length === 0 ? (
+                    <p className="text-sm text-[#8f5f41]">No approved members yet.</p>
+                  ) : (
+                    team.members.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between rounded-xl border border-[#ebd2c0] bg-[#fff8f3] px-3 py-2"
+                      >
+                        <p className="text-sm font-semibold text-[#7e461f]">{member.userName}</p>
+                        <p className="text-xs text-[#8f5f41]">Role: {member.roleInTeam}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <div className="mt-4 flex gap-2">
                   <Link
-                    to={`/teams/${item.teamId}`}
+                    to={`/teams/${team.teamId}`}
                     className="rounded-lg border border-[#daac8c] px-3 py-2 text-sm font-semibold text-[#7e461f] hover:bg-[#fff1e5]"
                   >
                     View Team
