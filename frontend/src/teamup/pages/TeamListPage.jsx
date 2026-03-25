@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getCreatedTeams, getJoinedTeams, joinTeam, deleteTeam } from "../api/teamApi.js";
+import { getJoinedTeams, getTeams, joinTeam, deleteTeam } from "../api/teamApi.js";
 import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
+import { useAuth } from "../../auth/AuthContext.jsx";
 import {
   formatTeamStatus,
   parseTeamMeta,
@@ -9,7 +10,8 @@ import {
 } from "../utils/teamMeta.js";
 
 function TeamListPage({ onlyMine = false }) {
-  const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const { user } = useAuth();
+  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
   const navigate = useNavigate();
 
   const [teams, setTeams] = useState([]);
@@ -44,7 +46,7 @@ function TeamListPage({ onlyMine = false }) {
       if (onlyMine) {
         data = await getJoinedTeams(currentUserId);
       } else {
-        data = await getCreatedTeams(currentUserId, skill);
+        data = await getTeams(skill);
       }
 
       const resolved = data.length > 0 ? data : mockTeams;
@@ -58,10 +60,7 @@ function TeamListPage({ onlyMine = false }) {
         });
         setTeams(data.length > 0 ? data : filteredMock);
       } else {
-        const createdMock = resolved.filter(
-          (team) => String(team.createdByUserId) === currentUserId,
-        );
-        setTeams(data.length > 0 ? data : createdMock);
+        setTeams(data.length > 0 ? data : resolved);
       }
       setIsMockMode(data.length === 0);
     } catch {
@@ -75,10 +74,7 @@ function TeamListPage({ onlyMine = false }) {
         });
         setTeams(filteredMock);
       } else {
-        const createdMock = mockTeams.filter(
-          (team) => String(team.createdByUserId) === currentUserId,
-        );
-        setTeams(createdMock);
+        setTeams(mockTeams);
       }
       setIsMockMode(true);
       setError("Backend unavailable. Showing dummy TeamUp data.");

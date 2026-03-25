@@ -1,5 +1,6 @@
 import { Bell, Mail, UserRound } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext.jsx";
 
 const linkClasses = ({ isActive }) =>
   [
@@ -10,6 +11,8 @@ const linkClasses = ({ isActive }) =>
   ].join(" ");
 
 function TeamupLayout() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-[#fdf2e8] px-2 py-3 text-[#693919] sm:px-5 sm:py-5">
       <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-[1280px] overflow-hidden rounded-[28px] border border-[#efceb7] bg-[#fff9f4] shadow-[0_16px_40px_rgba(139,69,19,0.08)] lg:grid-cols-[250px_1fr]">
@@ -48,8 +51,14 @@ function TeamupLayout() {
               <Mail size={18} />
               <div className="flex items-center gap-2 rounded-full bg-[#fff3e8] px-3 py-1.5 text-sm font-semibold text-[#88512b]">
                 <UserRound size={16} />
-                Welcome, Student
+                {user?.name || "Student"}
               </div>
+              <button
+                onClick={logout}
+                className="rounded-xl border border-[#e8a89f] bg-white px-3 py-1.5 text-sm font-semibold text-[#c65c50] hover:bg-[#fef4f2]"
+              >
+                Logout
+              </button>
             </div>
           </header>
 

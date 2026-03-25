@@ -1,37 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMembershipStatuses } from "../api/teamApi.js";
-import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
+import { useAuth } from "../../auth/AuthContext.jsx";
 
 function TeamStatusPage() {
-  const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const { user } = useAuth();
+  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
   const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isMockMode, setIsMockMode] = useState(false);
-
-  const mockStatuses = useMemo(() => {
-    return Object.entries(mockMembersByTeamId)
-      .flatMap(([teamId, members]) =>
-        members
-          .filter((member) => String(member.userId) === currentUserId)
-          .map((member) => ({
-            teamId: Number(teamId),
-            ...member,
-          })),
-      )
-      .map((member) => {
-        const matchedTeam = mockTeams.find((team) => Number(team.id) === Number(member.teamId));
-        return {
-          teamId: member.teamId,
-          teamTitle: member.teamTitle || matchedTeam?.title || "Team",
-          roleInTeam: member.roleInTeam,
-          membershipStatus: member.status,
-          updatedAt: new Date().toISOString(),
-        };
-      })
-      .filter((status) => status.roleInTeam !== "Owner");
-  }, [currentUserId]);
 
   useEffect(() => {
     let alive = true;
@@ -48,12 +25,10 @@ function TeamStatusPage() {
 
         const requestedStatuses = data.filter((item) => item.roleInTeam !== "Owner");
         setStatuses(requestedStatuses);
-        setIsMockMode(false);
       } catch {
         if (alive) {
-          setStatuses(mockStatuses);
-          setIsMockMode(true);
-          setError("Backend unavailable. Showing dummy data.");
+          setStatuses([]);
+          setError("Unable to load request statuses right now.");
         }
       } finally {
         if (alive) {
@@ -67,7 +42,7 @@ function TeamStatusPage() {
     return () => {
       alive = false;
     };
-  }, [currentUserId, mockStatuses]);
+  }, [currentUserId]);
 
   const statusColor = {
     PENDING: {

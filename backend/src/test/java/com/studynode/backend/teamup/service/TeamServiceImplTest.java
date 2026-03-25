@@ -147,6 +147,7 @@ class TeamServiceImplTest {
         user.setName(name);
         user.setRole(role);
         user.setEmail(name.toLowerCase() + "@test.com");
+        user.setPassword("password123");
         return user;
     }
 

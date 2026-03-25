@@ -7,13 +7,18 @@ import TeamDetailsPage from "./teamup/pages/TeamDetailsPage.jsx";
 import TeamStatusPage from "./teamup/pages/TeamStatusPage.jsx";
 import TeamEditPage from "./teamup/pages/TeamEditPage.jsx";
 import TeamAdminPage from "./teamup/pages/TeamAdminPage.jsx";
+import LoginPage from "./auth/pages/LoginPage.jsx";
+import RegisterPage from "./auth/pages/RegisterPage.jsx";
+import RequireAuth from "./auth/RequireAuth.jsx";
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
-      <Route element={<TeamupLayout />}>
+      <Route element={<RequireAuth><TeamupLayout /></RequireAuth>}>
         <Route path="/teams/new" element={<CreateTeamPage />} />
         <Route path="/teams" element={<TeamListPage />} />
         <Route path="/teams/my" element={<TeamListPage onlyMine />} />

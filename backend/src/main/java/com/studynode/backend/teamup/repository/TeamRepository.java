@@ -10,6 +10,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     List<Team> findByStatusAndRequiredSkillsContainingIgnoreCase(TeamStatus status, String requiredSkills);
 
+    List<Team> findByRequiredSkillsContainingIgnoreCase(String requiredSkills);
+
     List<Team> findByCreatedById(Long createdById);
 
     List<Team> findByCreatedByIdAndRequiredSkillsContainingIgnoreCase(Long createdById, String requiredSkills);

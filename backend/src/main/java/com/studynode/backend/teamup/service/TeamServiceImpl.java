@@ -114,9 +114,9 @@ public class TeamServiceImpl implements TeamService {
     public List<TeamResponse> getTeams(String skill) {
         List<Team> teams;
         if (skill != null && !skill.isBlank()) {
-            teams = teamRepository.findByStatusAndRequiredSkillsContainingIgnoreCase(TeamStatus.APPROVED, skill.trim());
+            teams = teamRepository.findByRequiredSkillsContainingIgnoreCase(skill.trim());
         } else {
-            teams = teamRepository.findByStatus(TeamStatus.APPROVED);
+            teams = teamRepository.findAll();
         }
 
         return teams.stream().map(this::toTeamResponse).toList();
@@ -321,6 +321,7 @@ public class TeamServiceImpl implements TeamService {
                     User fallback = new User();
                     fallback.setName("TeamUp Creator");
                     fallback.setEmail("teamup-creator@local");
+                    fallback.setPassword("fallback-creator");
                     fallback.setRole(UserRole.STUDENT);
                     return userRepository.save(fallback);
                 });

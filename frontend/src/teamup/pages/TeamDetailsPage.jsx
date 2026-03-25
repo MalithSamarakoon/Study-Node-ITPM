@@ -9,9 +9,11 @@ import {
 } from "../api/teamApi.js";
 import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
 import { formatTeamStatus, parseTeamMeta, splitSkills } from "../utils/teamMeta.js";
+import { useAuth } from "../../auth/AuthContext.jsx";
 
 function TeamDetailsPage() {
-  const currentUserId = String(import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const { user } = useAuth();
+  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
   const navigate = useNavigate();
 
   const { id } = useParams();
