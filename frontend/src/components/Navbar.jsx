@@ -135,7 +135,12 @@ const Navbar = () => {
                             </li>
                         </>
                     )}
-                    <li className="hover:text-purple-600 cursor-pointer">Q&A</li>
+                    {/* Q&A: students only */}
+                    {student && (
+                        <li className={navLinkClass('/qa')}>
+                            <Link to="/qa">Q&A</Link>
+                        </li>
+                    )}
                     <li className="hover:text-purple-600 cursor-pointer">FAQ</li>
                     <li className="hover:text-purple-600 cursor-pointer">Find a Member</li>
                 </ul>

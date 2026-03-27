@@ -1,0 +1,354 @@
+package org.practicals.backend.service.qa;
+
+import org.practicals.backend.dto.qa.*;
+import org.practicals.backend.model.notificationManagement.NotificationType;
+import org.practicals.backend.model.qa.*;
+import org.practicals.backend.model.userManagement.User;
+import org.practicals.backend.repository.qa.*;
+import org.practicals.backend.repository.userManagement.UserRepository;
+import org.practicals.backend.security.services.UserDetailsImpl;
+import org.practicals.backend.service.notificationManagement.NotificationService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+public class QaService {
+
+    private final QuestionRepository questionRepository;
+    private final AnswerRepository answerRepository;
+    private final TagRepository tagRepository;
+    private final VoteRepository voteRepository;
+    private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+
+    public QaService(
+            QuestionRepository questionRepository,
+            AnswerRepository answerRepository,
+            TagRepository tagRepository,
+            VoteRepository voteRepository,
+            CommentRepository commentRepository,
+            UserRepository userRepository,
+            NotificationService notificationService
+    ) {
+        this.questionRepository = questionRepository;
+        this.answerRepository = answerRepository;
+        this.tagRepository = tagRepository;
+        this.voteRepository = voteRepository;
+        this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
+    }
+
+    @Transactional
+    public QuestionResponse createQuestion(QuestionCreateRequest req) {
+        Long me = getCurrentUserId();
+        User meUser = userRepository.findById(me).orElseThrow();
+
+        if (questionRepository.existsByUserIdAndTitleIgnoreCase(me, req.title().trim())) {
+            throw new IllegalArgumentException("You already posted a question with the same title.");
+        }
+
+        Set<Tag> tags = normalizeAndUpsertTags(req.tags());
+
+        Question q = Question.builder()
+                .user(meUser)
+                .title(req.title().trim())
+                .description(req.description())
+                .status(QuestionStatus.OPEN)
+                .tags(tags)
+                .build();
+
+        Question saved = questionRepository.save(q);
+        return toResponse(saved);
+    }
+
+    public Page<QuestionResponse> listQuestions(QuestionStatus status, String search, Pageable pageable) {
+        Page<Question> page;
+        if (status != null) {
+            page = questionRepository.findByStatus(status, pageable);
+        } else if (search != null && !search.isBlank()) {
+            page = questionRepository.findByTitleContainingIgnoreCase(search.trim(), pageable);
+        } else {
+            page = questionRepository.findAll(pageable);
+        }
+        return page.map(this::toResponse);
+    }
+
+    public QuestionResponse getQuestion(Long id) {
+        return toResponse(questionRepository.findById(id).orElseThrow());
+    }
+
+    public java.util.List<AnswerResponse> listAnswers(Long questionId) {
+        return answerRepository.findByQuestionIdOrderByCreatedAtAsc(questionId)
+                .stream().map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public AnswerResponse addAnswer(Long questionId, AnswerCreateRequest req) {
+        Long me = getCurrentUserId();
+        User meUser = userRepository.findById(me).orElseThrow();
+
+        Question q = questionRepository.findById(questionId).orElseThrow();
+
+        Answer a = Answer.builder()
+                .question(q)
+                .user(meUser)
+                .content(req.content())
+                .voteCount(0)
+                .accepted(false)
+                .build();
+
+        Answer saved = answerRepository.save(a);
+
+        if (q.getStatus() == QuestionStatus.OPEN) {
+            q.setStatus(QuestionStatus.ANSWERED);
+            questionRepository.save(q);
+        }
+
+        // Notify question owner (not for self-answer)
+        if (!Objects.equals(q.getUser().getId(), me)) {
+            try {
+                User recipient = userRepository.findById(q.getUser().getId()).orElseThrow();
+                notificationService.notify(
+                        recipient,
+                        "New answer",
+                        "Your question received a new answer.",
+                        NotificationType.QA_NEW_ANSWER
+                );
+            } catch (Exception e) {
+                System.err.println("QA Notification failed (addAnswer): " + e.getMessage());
+            }
+        }
+
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public AnswerResponse vote(Long answerId, VoteRequest req) {
+        Long me = getCurrentUserId();
+        User meUser = userRepository.findById(me).orElseThrow();
+
+        Answer answer = answerRepository.findById(answerId).orElseThrow();
+
+        VoteType newType = req.voteType();
+
+        Vote existing = voteRepository.findByAnswerIdAndUserId(answerId, me).orElse(null);
+
+        int delta;
+        if (existing == null) {
+            Vote v = Vote.builder().answer(answer).user(meUser).voteType(newType).build();
+            voteRepository.save(v);
+            delta = (newType == VoteType.UP) ? 1 : -1;
+        } else {
+            if (existing.getVoteType() == newType) {
+                // toggle off
+                voteRepository.delete(existing);
+                delta = (newType == VoteType.UP) ? -1 : 1;
+            } else {
+                existing.setVoteType(newType);
+                voteRepository.save(existing);
+                delta = (newType == VoteType.UP) ? 2 : -2;
+            }
+        }
+
+        answer.setVoteCount(answer.getVoteCount() + delta);
+        Answer saved = answerRepository.save(answer);
+
+        // Notify answer owner (not for self-vote)
+        if (!Objects.equals(answer.getUser().getId(), me)) {
+            try {
+                User recipient = userRepository.findById(answer.getUser().getId()).orElseThrow();
+                notificationService.notify(
+                        recipient,
+                        "Vote on your answer",
+                        "Your answer received a vote.",
+                        NotificationType.QA_VOTE
+                );
+            } catch (Exception e) {
+                System.err.println("QA Notification failed (vote): " + e.getMessage());
+            }
+        }
+
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public AnswerResponse acceptAnswer(Long answerId) {
+        Long me = getCurrentUserId();
+
+        Answer answer = answerRepository.findById(answerId).orElseThrow();
+        Question q = answer.getQuestion();
+
+        if (!Objects.equals(q.getUser().getId(), me)) {
+            throw new IllegalArgumentException("Only the question owner can accept an answer.");
+        }
+
+        if (!answer.isAccepted() && answerRepository.existsByQuestionIdAndAcceptedTrue(q.getId())) {
+            answerRepository.findByQuestionIdOrderByCreatedAtAsc(q.getId())
+                    .stream()
+                    .filter(Answer::isAccepted)
+                    .forEach(a -> {
+                        a.setAccepted(false);
+                        answerRepository.save(a);
+                    });
+        }
+
+        answer.setAccepted(true);
+        Answer saved = answerRepository.save(answer);
+
+        q.setStatus(QuestionStatus.SOLVED);
+        questionRepository.save(q);
+
+        // Notify answer owner
+        if (!Objects.equals(saved.getUser().getId(), me)) {
+            try {
+                User recipient = userRepository.findById(saved.getUser().getId()).orElseThrow();
+                notificationService.notify(
+                        recipient,
+                        "Accepted answer",
+                        "Your answer was marked as the accepted solution.",
+                        NotificationType.QA_ACCEPTED
+                );
+            } catch (Exception e) {
+                System.err.println("QA Notification failed (acceptAnswer): " + e.getMessage());
+            }
+        }
+
+        return toResponse(saved);
+    }
+
+    public java.util.List<CommentResponse> listComments(Long answerId) {
+        return commentRepository.findByAnswerIdOrderByCreatedAtAsc(answerId)
+                .stream().map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public CommentResponse addComment(Long answerId, CommentCreateRequest req) {
+        Long me = getCurrentUserId();
+        User meUser = userRepository.findById(me).orElseThrow();
+
+        Answer a = answerRepository.findById(answerId).orElseThrow();
+
+        Comment c = Comment.builder()
+                .answer(a)
+                .user(meUser)
+                .content(req.content())
+                .build();
+
+        Comment saved = commentRepository.save(c);
+
+        // Notify answer owner (not for self-comment)
+        if (!Objects.equals(a.getUser().getId(), me)) {
+            try {
+                User recipient = userRepository.findById(a.getUser().getId()).orElseThrow();
+                notificationService.notify(
+                        recipient,
+                        "New comment",
+                        "Someone commented on your answer.",
+                        NotificationType.QA_NEW_COMMENT
+                );
+            } catch (Exception e) {
+                System.err.println("QA Notification failed (addComment): " + e.getMessage());
+            }
+        }
+
+        return toResponse(saved);
+    }
+
+    public java.util.List<String> suggestQuestionsByTitle(String title, Pageable pageable) {
+        if (title == null || title.isBlank()) return java.util.List.of();
+        return questionRepository.findByTitleContainingIgnoreCase(title.trim(), pageable)
+                .stream()
+                .map(Question::getTitle)
+                .distinct()
+                .toList();
+    }
+
+    public java.util.List<String> suggestTags(String prefix) {
+        if (prefix == null || prefix.isBlank()) return java.util.List.of();
+        return tagRepository.findTop10ByNameStartingWithIgnoreCase(prefix.trim())
+                .stream()
+                .map(Tag::getName)
+                .toList();
+    }
+
+    private Set<Tag> normalizeAndUpsertTags(Set<String> raw) {
+        if (raw == null || raw.isEmpty()) return Set.of();
+        return raw.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(String::toLowerCase)
+                .distinct()
+                .limit(10)
+                .map(name -> tagRepository.findByNameIgnoreCase(name)
+                        .orElseGet(() -> tagRepository.save(Tag.builder().name(name).build())))
+                .collect(Collectors.toSet());
+    }
+
+    private static String displayName(User user) {
+        if (user == null) return "Unknown User";
+        return user.getUsername(); // Adapted: target project User lacks fullName
+    }
+
+    private QuestionResponse toResponse(Question q) {
+        Set<String> tags = (q.getTags() == null) ? Set.of() : q.getTags().stream().map(Tag::getName).collect(Collectors.toSet());
+        return new QuestionResponse(
+                q.getId(),
+                q.getUser().getId(),
+                displayName(q.getUser()),
+                q.getTitle(),
+                q.getDescription(),
+                q.getStatus(),
+                tags,
+                q.getCreatedAt(),
+                q.getUpdatedAt()
+        );
+    }
+
+    private AnswerResponse toResponse(Answer a) {
+        return new AnswerResponse(
+                a.getId(),
+                a.getQuestion().getId(),
+                a.getUser().getId(),
+                displayName(a.getUser()),
+                a.getContent(),
+                a.getVoteCount(),
+                a.isAccepted(),
+                a.getCreatedAt(),
+                a.getUpdatedAt()
+        );
+    }
+
+    private CommentResponse toResponse(Comment c) {
+        return new CommentResponse(
+                c.getId(),
+                c.getAnswer().getId(),
+                c.getUser().getId(),
+                displayName(c.getUser()),
+                c.getContent(),
+                c.getCreatedAt()
+        );
+    }
+
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return null;
+        Object principal = auth.getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            return ((UserDetailsImpl) principal).getId();
+        }
+        return null;
+    }
+}

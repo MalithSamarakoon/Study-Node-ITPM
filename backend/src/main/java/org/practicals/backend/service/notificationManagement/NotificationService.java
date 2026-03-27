@@ -7,6 +7,8 @@ import org.practicals.backend.repository.notificationManagement.NotificationRepo
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class NotificationService {
@@ -17,6 +19,7 @@ public class NotificationService {
         this.notificationRepository = notificationRepository;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notify(User user, String title, String message, NotificationType type) {
         Notification n = Notification.builder()
                 .user(user)

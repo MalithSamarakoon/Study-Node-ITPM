@@ -12,6 +12,8 @@ import UploadResourcePage from "./pages/UploadResourcePage.jsx";
 import AdminModulesPage from "./pages/AdminModulesPage.jsx";
 import AdminResourceApprovalPage from "./pages/AdminResourceApprovalPage.jsx";
 import { PrivateRoute, AdminRoute, StudentRoute } from "./components/ProtectedRoute.jsx";
+import QAPage from "./pages/QAPage.jsx";
+import QuestionDetailPage from "./pages/QuestionDetailPage.jsx";
 import { ToastContainer } from 'react-toastify';
 
 const HomePage = () => (
@@ -48,6 +50,24 @@ function App() {
                         element={
                             <StudentRoute>
                                 <UploadResourcePage />
+                            </StudentRoute>
+                        }
+                    />
+
+                    {/* Q&A Section (Student-only) */}
+                    <Route
+                        path="/qa"
+                        element={
+                            <StudentRoute>
+                                <QAPage />
+                            </StudentRoute>
+                        }
+                    />
+                    <Route
+                        path="/qa/question/:id"
+                        element={
+                            <StudentRoute>
+                                <QuestionDetailPage />
                             </StudentRoute>
                         }
                     />
