@@ -83,4 +83,11 @@ public class UserService {
         response.setRole(user.getRole());
         return response;
     }
+
+    public UserResponse getUserProfileByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Error: User not found."));
+
+        return mapToUserResponse(user);
+    }
 }

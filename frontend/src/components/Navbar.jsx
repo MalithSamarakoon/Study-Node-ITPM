@@ -76,7 +76,15 @@ const Navbar = () => {
                     {showDropdown && (
                         <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
                             <ul className="py-2">
-                                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">My Profile</li>
+                                <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                                    <Link
+                                        to="/profile"
+                                        onClick={() => setShowDropdown(false)}
+                                        className="block px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                    >
+                                        My Profile
+                                    </Link>
+                                </li>
                                 <li
                                     onClick={handleSignOut}
                                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-600 font-medium"

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import api from '../api/api.js';
 import {useNavigate} from "react-router-dom";
 
 const RegistrationForm = () => {
@@ -102,7 +102,7 @@ const RegistrationForm = () => {
                     password: formData.password
                 };
 
-                const response = await axios.post('http://localhost:8080/api/auth/register', payload);
+                const response = await api.post('/auth/register', payload);
 
 
                 localStorage.setItem('user', JSON.stringify(response.data));

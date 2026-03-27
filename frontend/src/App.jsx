@@ -7,9 +7,11 @@ import Footer from "./components/Footer.jsx";
 import RegistrationPage from "./pages/RegistrationPage.jsx";
 import BlogPage from "./pages/BlogPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import {ToastContainer} from 'react-toastify';
 import BlogEditorPage from "./pages/BlogEditorPage.jsx";
 import BlogDetailPage from "./pages/BlogDetailPage.jsx";
+import AccountPage from "./pages/AccountPage.jsx";
 
 const HomePage = () => (
     <>
@@ -35,6 +37,14 @@ function App() {
                     <Route path="/blogs" element={<BlogPage/>}/>
                     <Route path="/blogs/create" element={<BlogEditorPage/>}/>
                     <Route path="/blogs/:id" element={<BlogDetailPage />} />
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <AccountPage />
+                            </ProtectedRoute>
+                        }
+                    />
                 </Routes>
             </main>
             {!hideLayout && <Footer />}

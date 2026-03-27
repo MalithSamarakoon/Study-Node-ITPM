@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import googleicon from '../assets/google-icon.png';
-import axios from "axios";
+import api from '../api/api.js';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -17,8 +17,8 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // 1. Call the endpoint you created in AuthController.java
-            const response = await axios.post("http://localhost:8080/api/auth/signin", {
+
+            const response = await api.post("/auth/signin", {
                 username,
                 password
             });
