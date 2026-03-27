@@ -1,17 +1,42 @@
 package org.practicals.backend.service.quizManagement;
 
-import org.practicals.backend.dto.quizManagement.*;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.practicals.backend.dto.quizManagement.AttemptHistoryResponse;
+import org.practicals.backend.dto.quizManagement.AttemptResultResponse;
+import org.practicals.backend.dto.quizManagement.ModuleRequest;
+import org.practicals.backend.dto.quizManagement.ModuleResponse;
+import org.practicals.backend.dto.quizManagement.QuestionOptionRequest;
+import org.practicals.backend.dto.quizManagement.QuestionRequest;
+import org.practicals.backend.dto.quizManagement.QuizAttemptSubmitRequest;
+import org.practicals.backend.dto.quizManagement.QuizDetailResponse;
+import org.practicals.backend.dto.quizManagement.QuizOptionResponse;
+import org.practicals.backend.dto.quizManagement.QuizQuestionResponse;
+import org.practicals.backend.dto.quizManagement.QuizRequest;
+import org.practicals.backend.dto.quizManagement.QuizSummaryResponse;
+import org.practicals.backend.dto.quizManagement.StudentAnswerRequest;
 import org.practicals.backend.exception.ResourceNotFoundException;
 import org.practicals.backend.model.quizManagement.Module;
-import org.practicals.backend.model.quizManagement.*;
+import org.practicals.backend.model.quizManagement.Question;
+import org.practicals.backend.model.quizManagement.QuestionOption;
+import org.practicals.backend.model.quizManagement.Quiz;
+import org.practicals.backend.model.quizManagement.QuizAttempt;
+import org.practicals.backend.model.quizManagement.StudentAnswer;
 import org.practicals.backend.model.userManagement.User;
-import org.practicals.backend.repository.quizManagement.*;
+import org.practicals.backend.repository.quizManagement.ModuleRepository;
+import org.practicals.backend.repository.quizManagement.QuestionOptionRepository;
+import org.practicals.backend.repository.quizManagement.QuestionRepository;
+import org.practicals.backend.repository.quizManagement.QuizAttemptRepository;
+import org.practicals.backend.repository.quizManagement.QuizRepository;
+import org.practicals.backend.repository.quizManagement.StudentAnswerRepository;
 import org.practicals.backend.repository.userManagement.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.format.DateTimeFormatter;
-import java.util.*;
 
 @Service
 @SuppressWarnings("null")

@@ -1,7 +1,8 @@
 package org.practicals.backend.config;
 
-import org.practicals.backend.model.userManagement.Role;
-import org.practicals.backend.model.userManagement.User;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.practicals.backend.model.quizManagement.Module;
 import org.practicals.backend.model.quizManagement.Question;
 import org.practicals.backend.model.quizManagement.QuestionOption;
@@ -9,6 +10,8 @@ import org.practicals.backend.model.quizManagement.Quiz;
 import org.practicals.backend.model.quizManagement.QuizAttempt;
 import org.practicals.backend.model.quizManagement.QuizStatus;
 import org.practicals.backend.model.quizManagement.StudentAnswer;
+import org.practicals.backend.model.userManagement.Role;
+import org.practicals.backend.model.userManagement.User;
 import org.practicals.backend.repository.quizManagement.ModuleRepository;
 import org.practicals.backend.repository.quizManagement.QuestionOptionRepository;
 import org.practicals.backend.repository.quizManagement.QuestionRepository;
@@ -23,9 +26,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
