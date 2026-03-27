@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disabled for development/testing APIs
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Public registration/login
+                    .requestMatchers("/api/quiz/**").permitAll() // Quiz demo endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // Admin dashboard only
                         .anyRequest().authenticated() // Everything else requires a login
                 );

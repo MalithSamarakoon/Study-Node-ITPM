@@ -92,11 +92,16 @@ const Navbar = () => {
             <nav className="border-y border-gray-200 bg-white">
                 <ul className="flex justify-center items-center gap-12 py-3 text-sm font-medium text-gray-700">
                     <li className="hover:text-purple-600 cursor-pointer">About</li>
-                    <li className="hover:text-purple-600 cursor-pointer">Modules</li>
+                    <Link to="/quiz/modules">
+                        <li className="hover:text-purple-600 cursor-pointer">Modules</li>
+                    </Link>
                     <Link to="/blogs">
                         <li className="hover:text-purple-600 cursor-pointer">Blogs</li>
                     </Link>
                     <li className="hover:text-purple-600 cursor-pointer">Q&A section</li>
+                    <Link to="/quiz/available">
+                        <li className="hover:text-purple-600 cursor-pointer">Quizzes</li>
+                    </Link>
                     <li className="hover:text-purple-600 cursor-pointer">FAQ</li>
                     <li className="hover:text-purple-600 cursor-pointer">Find a member (TeamUp)</li>
                 </ul>

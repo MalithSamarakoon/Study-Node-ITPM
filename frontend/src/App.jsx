@@ -1,4 +1,4 @@
-import {Routes, Route, BrowserRouter, useLocation} from "react-router-dom";
+import {Routes, Route, Navigate, useLocation} from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero.jsx";
 import FeatureSlider from "./components/FeatureSlider.jsx";
@@ -7,7 +7,13 @@ import Footer from "./components/Footer.jsx";
 import RegistrationPage from "./pages/RegistrationPage.jsx";
 import BlogPage from "./pages/BlogPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
-import {ToastContainer} from 'react-toastify';
+import QuizFeedLayout from "./pages/QuizFeedLayout.jsx";
+import ModuleListPage from "./pages/ModuleListPage.jsx";
+import AvailableQuizzesPage from "./pages/AvailableQuizzesPage.jsx";
+import ModuleQuizListPage from "./pages/ModuleQuizListPage.jsx";
+import QuizAttemptPage from "./pages/QuizAttemptPage.jsx";
+import QuizResultPage from "./pages/QuizResultPage.jsx";
+import QuizHistoryPage from "./pages/QuizHistoryPage.jsx";
 
 const HomePage = () => (
     <>
@@ -31,10 +37,20 @@ function App() {
                     <Route path="/registration" element={<RegistrationPage/>}/>
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/blogs" element={<BlogPage/>}/>
+                    <Route path="/quiz" element={<QuizFeedLayout/>}>
+                        <Route index element={<Navigate to="modules" replace/>}/>
+                        <Route path="modules" element={<ModuleListPage/>}/>
+                        <Route path="available" element={<AvailableQuizzesPage/>}/>
+                        <Route path="attempts" element={<QuizHistoryPage/>}/>
+                        <Route path="results" element={<QuizHistoryPage/>}/>
+                        <Route path="history" element={<QuizHistoryPage/>}/>
+                        <Route path="modules/:moduleId/quizzes" element={<ModuleQuizListPage/>}/>
+                        <Route path="modules/:moduleId/quizzes/:quizId/attempt" element={<QuizAttemptPage/>}/>
+                        <Route path="modules/:moduleId/results/:attemptId" element={<QuizResultPage/>}/>
+                    </Route>
                 </Routes>
             </main>
             {!hideLayout && <Footer />}
-            <ToastContainer/>
         </div>
     );
 };
