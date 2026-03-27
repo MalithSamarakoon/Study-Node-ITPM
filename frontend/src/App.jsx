@@ -8,6 +8,8 @@ import RegistrationPage from "./pages/RegistrationPage.jsx";
 import BlogPage from "./pages/BlogPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import {ToastContainer} from 'react-toastify';
+import BlogEditorPage from "./pages/BlogEditorPage.jsx";
+import BlogDetailPage from "./pages/BlogDetailPage.jsx";
 
 const HomePage = () => (
     <>
@@ -31,6 +33,8 @@ function App() {
                     <Route path="/registration" element={<RegistrationPage/>}/>
                     <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/blogs" element={<BlogPage/>}/>
+                    <Route path="/blogs/create" element={<BlogEditorPage/>}/>
+                    <Route path="/blogs/:id" element={<BlogDetailPage />} />
                 </Routes>
             </main>
             {!hideLayout && <Footer />}
