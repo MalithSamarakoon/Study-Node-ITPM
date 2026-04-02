@@ -31,6 +31,9 @@ public class Question {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuestionStatus status;

@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getQuestions, getAnswers } from '../services/qaService';
+import { deleteQuestion, getQuestions, getAnswers, updateQuestion } from '../services/qaService';
 import QuestionCard from '../components/qa/QuestionCard';
 import AskQuestionModal from '../components/qa/AskQuestionModal';
 import { getUserDisplayName } from '../utils/userDisplay';
 import { getAnswerCount } from '../utils/qaCounts';
 import { getUser } from '../utils/auth';
 import '../styles/qa/QAPage.css';
+
+const normalizeTagsInput = (value) => {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((tag) => tag.trim().toLowerCase())
+    .filter(Boolean)
+    .filter((tag, index, arr) => arr.indexOf(tag) === index)
+    .slice(0, 10);
+};
 
 function QAPage() {
   const navigate = useNavigate();
@@ -19,6 +29,15 @@ function QAPage() {
   const [user, setUser] = useState(null);
   const [resolvedAnswerCounts, setResolvedAnswerCounts] = useState({});
   const [recentQuestions, setRecentQuestions] = useState([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isUpdatingQuestion, setIsUpdatingQuestion] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [editError, setEditError] = useState('');
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    tagsInput: ''
+  });
 
   useEffect(() => {
     const currentUser = getUser();
@@ -106,6 +125,68 @@ function QAPage() {
 
   const handleBack = () => {
     navigate('/modules');
+  };
+
+  const openEditModal = (question) => {
+    if (!question) return;
+
+    setEditError('');
+    setEditingQuestion(question);
+    setEditForm({
+      title: question.title || '',
+      description: question.description || '',
+      tagsInput: Array.isArray(question.tags) ? question.tags.join(', ') : ''
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingQuestion(null);
+    setEditError('');
+    setEditForm({ title: '', description: '', tagsInput: '' });
+  };
+
+  const handleUpdateQuestion = async (e) => {
+    e.preventDefault();
+    if (!editingQuestion) return;
+
+    if (!editForm.title.trim() || !editForm.description.trim()) {
+      setEditError('Title and description are required.');
+      return;
+    }
+
+    setIsUpdatingQuestion(true);
+    setEditError('');
+
+    try {
+      await updateQuestion(editingQuestion.id, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        tags: normalizeTagsInput(editForm.tagsInput)
+      });
+
+      closeEditModal();
+      await Promise.all([loadQuestions(), loadRecentActivity()]);
+    } catch (err) {
+      setEditError(err.message || 'Failed to update question.');
+    } finally {
+      setIsUpdatingQuestion(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (question) => {
+    if (!question) return;
+
+    const confirmed = window.confirm('Delete this question? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      await deleteQuestion(question.id);
+      await Promise.all([loadQuestions(), loadRecentActivity()]);
+    } catch (err) {
+      alert(err.message || 'Failed to delete question.');
+    }
   };
 
   const stats = {
@@ -259,6 +340,9 @@ function QAPage() {
                   key={question.id}
                   question={question}
                   answerCountOverride={resolvedAnswerCounts[question.id]}
+                  canManage={Number(question.userId) === Number(user?.id)}
+                  onEdit={openEditModal}
+                  onDelete={handleDeleteQuestion}
                 />
               ))
             )}
@@ -269,8 +353,69 @@ function QAPage() {
       {showModal && (
         <AskQuestionModal
           onClose={() => setShowModal(false)}
-          onSuccess={loadQuestions}
+          onSuccess={async () => {
+            await Promise.all([loadQuestions(), loadRecentActivity()]);
+          }}
         />
+      )}
+
+      {showEditModal && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="qa-edit-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="qa-edit-modal-header">
+              <h2>Edit Question</h2>
+              <button type="button" className="close-btn" onClick={closeEditModal}>&times;</button>
+            </div>
+
+            <form onSubmit={handleUpdateQuestion} className="qa-edit-form">
+              {editError && <div className="error-message">{editError}</div>}
+
+              <div className="form-group">
+                <label htmlFor="edit-title">Question Title *</label>
+                <input
+                  id="edit-title"
+                  type="text"
+                  maxLength={200}
+                  value={editForm.title}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-description">Details *</label>
+                <textarea
+                  id="edit-description"
+                  rows={8}
+                  value={editForm.description}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="edit-tags">Tags (comma separated)</label>
+                <input
+                  id="edit-tags"
+                  type="text"
+                  placeholder="java, react, api"
+                  value={editForm.tagsInput}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, tagsInput: e.target.value }))}
+                />
+                <small>Up to 10 tags will be saved.</small>
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={closeEditModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" disabled={isUpdatingQuestion}>
+                  {isUpdatingQuestion ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

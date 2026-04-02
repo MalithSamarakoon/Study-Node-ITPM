@@ -11,6 +11,7 @@ public record QuestionResponse(
         String username,
         String title,
         String description,
+        String imageUrl,
         QuestionStatus status,
         Set<String> tags,
         Instant createdAt,

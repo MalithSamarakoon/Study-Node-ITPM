@@ -90,6 +90,10 @@
   font-family: inherit;
 }
 
+.form-group input[type="file"] {
+  padding: 0.5rem;
+}
+
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
@@ -193,6 +197,26 @@
   gap: 1rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
+}
+
+.question-image-preview-wrap {
+  margin-top: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.question-image-preview {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.image-remove-btn {
+  width: fit-content;
 }
 
 .btn-primary,

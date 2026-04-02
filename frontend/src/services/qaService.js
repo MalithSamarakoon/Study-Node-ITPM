@@ -1,4 +1,4 @@
-import { get, post } from '../utils/qaApi';
+import { del, get, post, put } from '../utils/qaApi';
 
 /**
  * Q&A Service - handles all Q&A API calls
@@ -20,8 +20,46 @@ export const getQuestionById = (id) => {
   return get(`/api/qa/questions/${id}`);
 };
 
+export const updateQuestion = async (id, questionData) => {
+  try {
+    return await put(`/api/qa/questions/${id}`, questionData);
+  } catch (error) {
+    const message = String(error?.message || '');
+    if (message.includes("Request method 'PUT' is not supported") || message.includes('HTTP 405')) {
+      return post(`/api/qa/questions/${id}/update`, questionData);
+    }
+    throw error;
+  }
+};
+
+export const deleteQuestion = (id) => {
+  return del(`/api/qa/questions/${id}`);
+};
+
 export const createQuestion = (questionData) => {
-  return post('/api/qa/questions', questionData);
+  const hasImage = questionData?.image instanceof File;
+
+  if (hasImage) {
+    const uploadData = new FormData();
+    const meta = {
+      title: questionData.title,
+      description: questionData.description,
+      tags: questionData.tags || []
+    };
+
+    uploadData.append('meta', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+    uploadData.append('image', questionData.image);
+
+    return post('/api/qa/questions', uploadData);
+  }
+
+  const payload = {
+    title: questionData.title,
+    description: questionData.description,
+    tags: questionData.tags || []
+  };
+
+  return post('/api/qa/questions', payload);
 };
 
 export const getSimilarQuestions = (title, page = 0, size = 5) => {

@@ -8,19 +8,25 @@ import org.practicals.backend.repository.qa.*;
 import org.practicals.backend.repository.userManagement.UserRepository;
 import org.practicals.backend.security.services.UserDetailsImpl;
 import org.practicals.backend.service.notificationManagement.NotificationService;
+import org.practicals.backend.service.storageManagement.FileStorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class QaService {
+
+    private static final long MAX_QUESTION_IMAGE_SIZE_BYTES = 5L * 1024 * 1024;
+    private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
 
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
@@ -29,6 +35,7 @@ public class QaService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final FileStorageService fileStorageService;
 
     public QaService(
             QuestionRepository questionRepository,
@@ -37,7 +44,8 @@ public class QaService {
             VoteRepository voteRepository,
             CommentRepository commentRepository,
             UserRepository userRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            FileStorageService fileStorageService
     ) {
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
@@ -46,10 +54,16 @@ public class QaService {
         this.commentRepository = commentRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional
     public QuestionResponse createQuestion(QuestionCreateRequest req) {
+        return createQuestion(req, null);
+    }
+
+    @Transactional
+    public QuestionResponse createQuestion(QuestionCreateRequest req, MultipartFile image) {
         Long me = getCurrentUserId();
         User meUser = userRepository.findById(me).orElseThrow();
 
@@ -58,11 +72,19 @@ public class QaService {
         }
 
         Set<Tag> tags = normalizeAndUpsertTags(req.tags());
+    String imageUrl = null;
+
+    if (image != null && !image.isEmpty()) {
+        validateQuestionImage(image);
+        var storedImage = fileStorageService.store(image, "qa-questions");
+        imageUrl = "/files/qa-questions/" + storedImage.storedName();
+    }
 
         Question q = Question.builder()
                 .user(meUser)
                 .title(req.title().trim())
                 .description(req.description())
+        .imageUrl(imageUrl)
                 .status(QuestionStatus.OPEN)
                 .tags(tags)
                 .build();
@@ -85,6 +107,44 @@ public class QaService {
 
     public QuestionResponse getQuestion(Long id) {
         return toResponse(questionRepository.findById(id).orElseThrow());
+    }
+
+    @Transactional
+    public QuestionResponse updateQuestion(Long questionId, QuestionUpdateRequest req) {
+        Long me = getCurrentUserId();
+
+        Question existing = questionRepository.findById(questionId).orElseThrow();
+        if (!Objects.equals(existing.getUser().getId(), me)) {
+            throw new IllegalArgumentException("You can only update your own questions.");
+        }
+
+        String trimmedTitle = req.title().trim();
+        if (questionRepository.existsByUserIdAndTitleIgnoreCaseAndIdNot(me, trimmedTitle, questionId)) {
+            throw new IllegalArgumentException("You already posted another question with the same title.");
+        }
+
+        existing.setTitle(trimmedTitle);
+        existing.setDescription(req.description().trim());
+        existing.setTags(normalizeAndUpsertTags(req.tags()));
+
+        Question saved = questionRepository.save(existing);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public void deleteQuestion(Long questionId) {
+        Long me = getCurrentUserId();
+
+        Question existing = questionRepository.findById(questionId).orElseThrow();
+        if (!Objects.equals(existing.getUser().getId(), me)) {
+            throw new IllegalArgumentException("You can only delete your own questions.");
+        }
+
+        if (answerRepository.countByQuestionId(questionId) > 0) {
+            throw new IllegalArgumentException("Cannot delete a question that already has answers.");
+        }
+
+        questionRepository.delete(existing);
     }
 
     public java.util.List<AnswerResponse> listAnswers(Long questionId) {
@@ -310,11 +370,31 @@ public class QaService {
                 displayName(q.getUser()),
                 q.getTitle(),
                 q.getDescription(),
+                q.getImageUrl(),
                 q.getStatus(),
                 tags,
                 q.getCreatedAt(),
                 q.getUpdatedAt()
         );
+    }
+
+    private void validateQuestionImage(MultipartFile image) {
+        if (image.getSize() > MAX_QUESTION_IMAGE_SIZE_BYTES) {
+            throw new IllegalArgumentException("Question image must be 5MB or smaller.");
+        }
+
+        String contentType = image.getContentType();
+        String normalizedContentType = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
+        String originalName = image.getOriginalFilename();
+        String normalizedName = originalName == null ? "" : originalName.toLowerCase(Locale.ROOT);
+
+        boolean validByContentType = ALLOWED_IMAGE_CONTENT_TYPES.contains(normalizedContentType);
+        boolean validByFileName = normalizedName.endsWith(".jpg") || normalizedName.endsWith(".jpeg")
+                || normalizedName.endsWith(".png") || normalizedName.endsWith(".webp");
+
+        if (!validByContentType && !validByFileName) {
+            throw new IllegalArgumentException("Only JPG, PNG, and WEBP images are allowed for questions.");
+        }
     }
 
     private AnswerResponse toResponse(Answer a) {

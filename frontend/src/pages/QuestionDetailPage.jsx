@@ -12,6 +12,7 @@ import StatusBadge from '../components/qa/StatusBadge';
 import TagBadge from '../components/qa/TagBadge';
 import AnswerCard from '../components/qa/AnswerCard';
 import { getUser } from '../utils/auth';
+import { resolveApiUrl } from '../utils/qaApi';
 import '../styles/qa/QuestionDetailPage.css';
 
 function QuestionDetailPage() {
@@ -135,6 +136,7 @@ function QuestionDetailPage() {
   }
 
   const isQuestionOwner = question.userId === currentUserId;
+  const questionImageUrl = resolveApiUrl(question.imageUrl);
 
   return (
     <div className="question-detail-page">
@@ -173,6 +175,12 @@ function QuestionDetailPage() {
           <div className="question-content-detail">
             {question.description}
           </div>
+
+          {questionImageUrl && (
+            <div className="question-image-detail-wrap">
+              <img src={questionImageUrl} alt="Question attachment" className="question-image-detail" />
+            </div>
+          )}
 
           {question.tags && question.tags.length > 0 && (
             <div className="question-tags-detail">

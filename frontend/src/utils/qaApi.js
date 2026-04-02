@@ -13,10 +13,16 @@ const api = async (endpoint, options = {}) => {
   const token = getToken();
 
   const defaultHeaders = {
-    'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
     ...headers,
   };
+
+  const hasBody = body !== null && body !== undefined;
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
+  if (!isFormData && !defaultHeaders['Content-Type']) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
   const config = {
     method,
@@ -24,8 +30,8 @@ const api = async (endpoint, options = {}) => {
     ...restOptions,
   };
 
-  if (body) {
-    config.body = typeof body === 'string' ? body : JSON.stringify(body);
+  if (hasBody) {
+    config.body = isFormData ? body : (typeof body === 'string' ? body : JSON.stringify(body));
   }
 
   try {
@@ -64,5 +70,13 @@ export const put = (endpoint, body, options = {}) =>
 
 export const del = (endpoint, options = {}) =>
   api(endpoint, { method: 'DELETE', ...options });
+
+export const resolveApiUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 export default { get, post, put, del };

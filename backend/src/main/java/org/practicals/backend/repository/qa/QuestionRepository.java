@@ -14,5 +14,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     boolean existsByUserIdAndTitleIgnoreCase(Long userId, String title);
 
+    boolean existsByUserIdAndTitleIgnoreCaseAndIdNot(Long userId, String title, Long questionId);
+
     Page<Question> findByTitleContainingIgnoreCase(String title, Pageable pageable);
 }

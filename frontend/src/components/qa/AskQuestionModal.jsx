@@ -3,16 +3,21 @@ import { createQuestion, getSimilarQuestions } from '../../services/qaService';
 import TagBadge from './TagBadge';
 import '../../styles/qa/AskQuestionModal.css';
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 function AskQuestionModal({ onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    tags: []
+    tags: [],
+    image: null
   });
   const [tagInput, setTagInput] = useState('');
   const [similarQuestions, setSimilarQuestions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
 
   useEffect(() => {
     if (formData.title.length > 10) {
@@ -30,6 +35,14 @@ function AskQuestionModal({ onClose, onSuccess }) {
       setSimilarQuestions([]);
     }
   }, [formData.title]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   const handleAddTag = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -52,9 +65,52 @@ function AskQuestionModal({ onClose, onSuccess }) {
     }));
   };
 
+  const clearSelectedImage = () => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+    setImagePreviewUrl('');
+    setFormData(prev => ({ ...prev, image: null }));
+  };
+
+  const handleImageChange = (e) => {
+    const selectedFile = e.target.files?.[0];
+
+    if (!selectedFile) {
+      clearSelectedImage();
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.includes(selectedFile.type)) {
+      setError('Only JPG, PNG, and WEBP images are allowed.');
+      e.target.value = '';
+      return;
+    }
+
+    if (selectedFile.size > MAX_IMAGE_BYTES) {
+      setError('Image size must be 5MB or smaller.');
+      e.target.value = '';
+      return;
+    }
+
+    setError('');
+
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+
+    setFormData(prev => ({ ...prev, image: selectedFile }));
+    setImagePreviewUrl(URL.createObjectURL(selectedFile));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    const pendingTag = tagInput.trim().toLowerCase();
+    const mergedTags = pendingTag
+      ? Array.from(new Set([...formData.tags, pendingTag])).slice(0, 5)
+      : formData.tags;
 
     if (!formData.title.trim() || !formData.description.trim()) {
       setError('Title and description are required');
@@ -63,8 +119,13 @@ function AskQuestionModal({ onClose, onSuccess }) {
 
     setIsSubmitting(true);
     try {
-      console.log('Submitting question:', formData);
-      const response = await createQuestion(formData);
+      const payload = {
+        ...formData,
+        tags: mergedTags
+      };
+
+      console.log('Submitting question:', payload);
+      const response = await createQuestion(payload);
       console.log('Question created successfully:', response);
       onSuccess?.();
       onClose();
@@ -151,6 +212,26 @@ function AskQuestionModal({ onClose, onSuccess }) {
               disabled={formData.tags.length >= 5}
             />
             <small>Add up to 5 tags to help others find your question</small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="question-image">Question Image (optional)</label>
+            <input
+              id="question-image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleImageChange}
+            />
+            <small>Supported: JPG, PNG, WEBP. Maximum size: 5MB.</small>
+
+            {imagePreviewUrl && (
+              <div className="question-image-preview-wrap">
+                <img src={imagePreviewUrl} alt="Selected question" className="question-image-preview" />
+                <button type="button" className="btn-secondary image-remove-btn" onClick={clearSelectedImage}>
+                  Remove Image
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="modal-footer">
