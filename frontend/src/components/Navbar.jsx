@@ -124,6 +124,11 @@ const Navbar = () => {
                             <Link to="/resources/upload">Upload Resource</Link>
                         </li>
                     )}
+                    {student && (
+                        <li className={navLinkClass('/resources/my-uploads')}>
+                            <Link to="/resources/my-uploads">My Uploads</Link>
+                        </li>
+                    )}
                     {/* Admin nav links */}
                     {admin && (
                         <>
@@ -144,4 +149,4 @@ const Navbar = () => {
     );
 };
 
-export default Navbar;
+export default Navbar;

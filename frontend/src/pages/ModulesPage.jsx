@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { getUserDisplayName } from '../utils/userDisplay'
 import { getToken, isLoggedIn } from '../utils/auth'
@@ -18,8 +19,10 @@ function ModulesPage() {
   const [selectedResolution, setSelectedResolution] = useState('720p')
   const [modules, setModules] = useState([])
   const [filteredModules, setFilteredModules] = useState([])
+  const modalRef = useRef(null)
 
   const backendOrigin = 'http://localhost:8080'
+  const closeVideoModal = () => setPlayingResource(null)
 
   const getResourceFileUrl = (resource) => {
     if (!resource) return null
@@ -105,6 +108,32 @@ function ModulesPage() {
   useEffect(() => {
     if (selectedModule) fetchResources()
   }, [selectedModule, selectedYear, selectedSemester])
+
+  useEffect(() => {
+    if (!playingResource) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        closeVideoModal()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+
+    requestAnimationFrame(() => {
+      if (modalRef.current) {
+        modalRef.current.scrollTo({ top: 0, behavior: 'auto' })
+      }
+    })
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [playingResource])
 
   const fetchModules = async () => {
     try {
@@ -309,14 +338,14 @@ function ModulesPage() {
             </div>
           )}
 
-          {playingResource && (
-            <div className="video-modal" onClick={() => setPlayingResource(null)}>
-              <div className="video-modal-content" onClick={e => e.stopPropagation()}>
-                <button className="video-close" onClick={() => setPlayingResource(null)}>✖</button>
+          {playingResource && createPortal(
+            <div className="modules-video-modal" ref={modalRef} onClick={closeVideoModal}>
+              <div className="modules-video-modal-content" onClick={e => e.stopPropagation()}>
+                <button type="button" className="modules-video-close" onClick={closeVideoModal} aria-label="Close video modal">✕</button>
                 <div className="video-player-section">
                   <div className="video-player-container">
-                    <video controls>
-                      <source src={getResourceFileUrl(playingResource)} type="video/mp4" />
+                    <video controls autoPlay playsInline preload="metadata">
+                      <source src={getResourceFileUrl(playingResource)} />
                       Your browser does not support the video tag.
                     </video>
                   </div>
@@ -342,7 +371,7 @@ function ModulesPage() {
                     <h2 className="video-title">{playingResource.title}</h2>
                     {getVideoMaterialUrl(playingResource) && (
                       <div className="video-material-panel">
-                        <div className="video-material-title">Lecture Material</div>
+                        <div className="video-material-title">Study Material</div>
                         <a
                           href={getVideoMaterialUrl(playingResource)}
                           target="_blank"
@@ -366,23 +395,9 @@ function ModulesPage() {
                     )}
                   </div>
                 </div>
-
-                <div className="video-sidebar">
-                  <div className="sidebar-section">
-                    <h3 className="sidebar-title">Related Videos</h3>
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="related-video">
-                        <div className="related-thumbnail">🎥</div>
-                        <div className="related-info">
-                          <div className="related-title">Related Learning Resource {i}</div>
-                          <div className="related-meta">Browse more modules above</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>

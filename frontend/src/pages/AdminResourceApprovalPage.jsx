@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { getUserDisplayName } from '../utils/userDisplay'
 import { getToken } from '../utils/auth'
 import '../styles/AdminApproval.css'
+import studentsImage from '../assets/images/students.jpg'
 
 function AdminResourceApprovalPage() {
   const [resources, setResources] = useState([])
@@ -13,11 +15,79 @@ function AdminResourceApprovalPage() {
   const [selectedYear, setSelectedYear] = useState('3')
   const [selectedSemester, setSelectedSemester] = useState('1')
   const [selectedModule, setSelectedModule] = useState('')
+  const [playingResource, setPlayingResource] = useState(null)
+  const videoRef = useRef(null)
+  const modalRef = useRef(null)
+
+  const backendOrigin = 'http://localhost:8080'
+  const closeVideoModal = () => setPlayingResource(null)
+
+  const getResourceFileUrl = (resource) => {
+    if (!resource) return null
+    if (resource.fileUrl) {
+      if (resource.fileUrl.startsWith('http://') || resource.fileUrl.startsWith('https://')) return resource.fileUrl
+      if (resource.fileUrl.startsWith('/')) return `${backendOrigin}${resource.fileUrl}`
+      return `${backendOrigin}/${resource.fileUrl}`
+    }
+    return `${backendOrigin}/api/resources/download/${resource.id}`
+  }
+
+  const getThumbnailUrl = (resource) => {
+    if (!resource) return studentsImage
+    const thumbnailPath = resource.thumbnailUrl || resource.thumbnail || resource.thumbnailPath
+    if (thumbnailPath) {
+      if (thumbnailPath.startsWith('http://') || thumbnailPath.startsWith('https://')) return thumbnailPath
+      if (thumbnailPath.startsWith('/')) return `${backendOrigin}${thumbnailPath}`
+      return `${backendOrigin}/${thumbnailPath}`
+    }
+    return studentsImage
+  }
+
+  const getVideoMaterialUrl = (resource) => {
+    if (!resource) return null
+    const materialPath =
+      resource.videoMaterialPdfUrl ||
+      resource.videoMaterialUrl ||
+      resource.materialPdfUrl ||
+      resource.materialUrl ||
+      resource.pdfMaterialUrl ||
+      resource.notesPdfUrl
+    if (!materialPath) return null
+    if (materialPath.startsWith('http://') || materialPath.startsWith('https://')) return materialPath
+    if (materialPath.startsWith('/')) return `${backendOrigin}${materialPath}`
+    return `${backendOrigin}/${materialPath}`
+  }
 
   useEffect(() => {
     fetchModules()
     fetchResources('pending')
   }, [])
+
+  useEffect(() => {
+    if (!playingResource) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        closeVideoModal()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+
+    requestAnimationFrame(() => {
+      if (modalRef.current) {
+        modalRef.current.scrollTo({ top: 0, behavior: 'auto' })
+      }
+    })
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [playingResource])
 
   const fetchModules = async () => {
     try {
@@ -213,43 +283,158 @@ function AdminResourceApprovalPage() {
                 const uploadedByDisplay = resource.uploadedBy
                   ? getUserDisplayName(resource.uploadedBy)
                   : 'Unknown'
+                const isVideo = (resource.fileType || '').toLowerCase() === 'video'
+                const thumbnailUrl = getThumbnailUrl(resource)
+                const resourceFileUrl = getResourceFileUrl(resource)
+                const videoMaterialUrl = getVideoMaterialUrl(resource)
 
                 return (
                   <article key={resource.id} className="approval-card">
-                    <div className="card-header">
-                      <div>
-                        <span className="card-kicker">{resource.fileType || 'Resource'}</span>
-                        <h3>{resource.title}</h3>
+                    <div className="resource-preview-layout">
+                      <div className="resource-preview-media">
+                        {isVideo ? (
+                          <img
+                            src={thumbnailUrl}
+                            alt={resource.title || 'Resource preview'}
+                            onError={(e) => {
+                              e.target.onerror = null
+                              e.target.src = studentsImage
+                            }}
+                          />
+                        ) : (
+                          <div className="resource-preview-file-fallback">PDF</div>
+                        )}
                       </div>
-                      <span className="card-id">ID {resource.id}</span>
+
+                      <div className="resource-preview-content">
+                        <div className="card-header">
+                          <div>
+                            <span className="card-kicker">{resource.fileType || 'Resource'}</span>
+                            <h3>{resource.title}</h3>
+                          </div>
+                          <span className="card-id">ID {resource.id}</span>
+                        </div>
+
+                        <div className="card-meta">
+                          <div>
+                            <span className="meta-label">Uploaded by</span>
+                            <span className="meta-value">{uploadedByDisplay}</span>
+                          </div>
+                          <div>
+                            <span className="meta-label">Module</span>
+                            <span className="meta-value">{resource.module?.name || 'N/A'}</span>
+                          </div>
+                          <div>
+                            <span className="meta-label">Type</span>
+                            <span className="meta-value">{resource.fileType || 'Unknown'}</span>
+                          </div>
+                        </div>
+
+                        {resource.description && <p className="card-desc">{resource.description}</p>}
+
+                        {view === 'pending' && (
+                          <div className="preview-actions">
+                            {isVideo ? (
+                              <>
+                                <button className="preview-button watch" onClick={() => setPlayingResource(resource)}>
+                                  Watch Video
+                                </button>
+                                {videoMaterialUrl && (
+                                  <a
+                                    href={videoMaterialUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="preview-button material"
+                                  >
+                                    View Material PDF
+                                  </a>
+                                )}
+                              </>
+                            ) : (
+                              resourceFileUrl && (
+                                <a
+                                  href={resourceFileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="preview-button material"
+                                >
+                                  View PDF
+                                </a>
+                              )
+                            )}
+                          </div>
+                        )}
+
+                        {view === 'pending' && (
+                          <div className="card-actions">
+                            <button className="approve-button" onClick={() => handleApprove(resource.id)}>Approve</button>
+                            <button className="reject-button" onClick={() => handleReject(resource.id)}>Reject</button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="card-meta">
-                      <div>
-                        <span className="meta-label">Uploaded by</span>
-                        <span className="meta-value">{uploadedByDisplay}</span>
-                      </div>
-                      <div>
-                        <span className="meta-label">Module</span>
-                        <span className="meta-value">{resource.module?.name || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="meta-label">Type</span>
-                        <span className="meta-value">{resource.fileType || 'Unknown'}</span>
-                      </div>
-                    </div>
-                    {resource.description && <p className="card-desc">{resource.description}</p>}
-                    {view === 'pending' && (
-                      <div className="card-actions">
-                        <button className="approve-button" onClick={() => handleApprove(resource.id)}>Approve</button>
-                        <button className="reject-button" onClick={() => handleReject(resource.id)}>Reject</button>
-                      </div>
-                    )}
                   </article>
                 )
               })}
             </div>
           )}
         </section>
+
+        {playingResource && createPortal(
+          <div className="admin-video-modal" ref={modalRef} onClick={closeVideoModal}>
+            <button
+              type="button"
+              className="admin-video-close-floating"
+              onClick={(e) => {
+                e.stopPropagation()
+                closeVideoModal()
+              }}
+              aria-label="Close video modal"
+            >
+              ✕
+            </button>
+            <div className="admin-video-modal-content" onClick={e => e.stopPropagation()}>
+              <button type="button" className="admin-video-close" onClick={closeVideoModal} aria-label="Close video modal">✕</button>
+              <div className="admin-video-player-section">
+                <div className="admin-video-player-container">
+                  <video ref={videoRef} controls autoPlay playsInline preload="metadata">
+                    <source src={getResourceFileUrl(playingResource)} />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+
+                <div className="admin-video-info-section">
+                  <h2 className="admin-video-title">{playingResource.title}</h2>
+                  {getVideoMaterialUrl(playingResource) && (
+                    <div className="admin-video-material-panel">
+                      <div className="admin-video-material-title">Study Material</div>
+                      <a
+                        href={getVideoMaterialUrl(playingResource)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="admin-video-material-link"
+                      >
+                        Open Attached PDF
+                      </a>
+                    </div>
+                  )}
+
+                  <div className="admin-video-channel">
+                    <div className="admin-channel-avatar">👤</div>
+                    <div className="admin-channel-info">
+                      <div className="admin-channel-name">{getUserDisplayName(playingResource.uploadedBy)}</div>
+                    </div>
+                  </div>
+
+                  {playingResource.description && (
+                    <div className="admin-video-description">{playingResource.description}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </main>
     </div>
   )

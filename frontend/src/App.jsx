@@ -9,6 +9,7 @@ import BlogPage from "./pages/BlogPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import ModulesPage from "./pages/ModulesPage.jsx";
 import UploadResourcePage from "./pages/UploadResourcePage.jsx";
+import MyUploadsPage from "./pages/MyUploadsPage.jsx";
 import AdminModulesPage from "./pages/AdminModulesPage.jsx";
 import AdminResourceApprovalPage from "./pages/AdminResourceApprovalPage.jsx";
 import { PrivateRoute, AdminRoute, StudentRoute } from "./components/ProtectedRoute.jsx";
@@ -48,6 +49,14 @@ function App() {
                         element={
                             <StudentRoute>
                                 <UploadResourcePage />
+                            </StudentRoute>
+                        }
+                    />
+                    <Route
+                        path="/resources/my-uploads"
+                        element={
+                            <StudentRoute>
+                                <MyUploadsPage />
                             </StudentRoute>
                         }
                     />

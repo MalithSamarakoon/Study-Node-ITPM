@@ -111,8 +111,8 @@ public class ResourceService {
         if (!r.getUploadedBy().getId().equals(userId)) {
             throw new IllegalArgumentException("You can only edit your own resources");
         }
-        if (r.getStatus() != ResourceStatus.PENDING) {
-            throw new IllegalArgumentException("Only PENDING resources can be edited");
+        if (r.getStatus() != ResourceStatus.PENDING && r.getStatus() != ResourceStatus.APPROVED) {
+            throw new IllegalArgumentException("Only PENDING or APPROVED resources can be edited");
         }
 
         r.setTitle(title);
@@ -127,8 +127,8 @@ public class ResourceService {
         if (!r.getUploadedBy().getId().equals(userId)) {
             throw new IllegalArgumentException("You can only delete your own resources");
         }
-        if (r.getStatus() != ResourceStatus.PENDING) {
-            throw new IllegalArgumentException("Only PENDING resources can be deleted");
+        if (r.getStatus() != ResourceStatus.PENDING && r.getStatus() != ResourceStatus.APPROVED) {
+            throw new IllegalArgumentException("Only PENDING or APPROVED resources can be deleted");
         }
 
         resourceRepository.delete(r);
