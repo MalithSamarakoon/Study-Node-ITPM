@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -35,6 +37,13 @@ public class Question {
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "question_type", nullable = false)
+    private QuestionType questionType;
+
+    @Column(name = "poll_expires_at")
+    private Instant pollExpiresAt;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuestionStatus status;
 
@@ -53,12 +62,22 @@ public class Question {
     @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    @Builder.Default
+    private List<PollOption> pollOptions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<PollVote> pollVotes = new ArrayList<>();
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;
         if (status == null) status = QuestionStatus.OPEN;
+        if (questionType == null) questionType = QuestionType.STANDARD;
     }
 
     @PreUpdate

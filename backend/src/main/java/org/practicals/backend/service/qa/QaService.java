@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,6 +33,8 @@ public class QaService {
     private final AnswerRepository answerRepository;
     private final TagRepository tagRepository;
     private final VoteRepository voteRepository;
+    private final PollOptionRepository pollOptionRepository;
+    private final PollVoteRepository pollVoteRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
@@ -42,6 +45,8 @@ public class QaService {
             AnswerRepository answerRepository,
             TagRepository tagRepository,
             VoteRepository voteRepository,
+            PollOptionRepository pollOptionRepository,
+            PollVoteRepository pollVoteRepository,
             CommentRepository commentRepository,
             UserRepository userRepository,
             NotificationService notificationService,
@@ -51,6 +56,8 @@ public class QaService {
         this.answerRepository = answerRepository;
         this.tagRepository = tagRepository;
         this.voteRepository = voteRepository;
+        this.pollOptionRepository = pollOptionRepository;
+        this.pollVoteRepository = pollVoteRepository;
         this.commentRepository = commentRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
@@ -84,16 +91,58 @@ public class QaService {
                 .user(meUser)
                 .title(req.title().trim())
                 .description(req.description())
-        .imageUrl(imageUrl)
+                .imageUrl(imageUrl)
+                .questionType(QuestionType.STANDARD)
                 .status(QuestionStatus.OPEN)
                 .tags(tags)
                 .build();
 
         Question saved = questionRepository.save(q);
-        return toResponse(saved);
+        return toResponse(saved, me);
+    }
+
+    @Transactional
+    public QuestionResponse createPoll(PollCreateRequest req) {
+        Long me = getCurrentUserId();
+        User meUser = userRepository.findById(me).orElseThrow();
+
+        String trimmedTitle = req.title().trim();
+        if (questionRepository.existsByUserIdAndTitleIgnoreCase(me, trimmedTitle)) {
+            throw new IllegalArgumentException("You already posted a question with the same title.");
+        }
+
+        List<String> normalizedOptions = normalizePollOptions(req.options());
+        if (normalizedOptions.size() < 2) {
+            throw new IllegalArgumentException("A poll must have at least 2 unique options.");
+        }
+
+        int expireDays = req.expiresInDays() == null ? 7 : req.expiresInDays();
+
+        Question poll = Question.builder()
+                .user(meUser)
+                .title(trimmedTitle)
+                .description("Poll")
+                .questionType(QuestionType.POLL)
+                .status(QuestionStatus.OPEN)
+                .pollExpiresAt(java.time.Instant.now().plus(java.time.Duration.ofDays(expireDays)))
+                .build();
+
+        for (int i = 0; i < normalizedOptions.size(); i++) {
+            PollOption option = PollOption.builder()
+                    .question(poll)
+                    .text(normalizedOptions.get(i))
+                    .sortOrder(i)
+                    .voteCount(0)
+                    .build();
+            poll.getPollOptions().add(option);
+        }
+
+        Question saved = questionRepository.save(poll);
+        return toResponse(saved, me);
     }
 
     public Page<QuestionResponse> listQuestions(QuestionStatus status, String search, Pageable pageable) {
+        Long me = getCurrentUserId();
         Page<Question> page;
         if (status != null) {
             page = questionRepository.findByStatus(status, pageable);
@@ -102,11 +151,12 @@ public class QaService {
         } else {
             page = questionRepository.findAll(pageable);
         }
-        return page.map(this::toResponse);
+        return page.map(q -> toResponse(q, me));
     }
 
     public QuestionResponse getQuestion(Long id) {
-        return toResponse(questionRepository.findById(id).orElseThrow());
+        Long me = getCurrentUserId();
+        return toResponse(questionRepository.findById(id).orElseThrow(), me);
     }
 
     @Transactional
@@ -114,6 +164,9 @@ public class QaService {
         Long me = getCurrentUserId();
 
         Question existing = questionRepository.findById(questionId).orElseThrow();
+        if (existing.getQuestionType() != QuestionType.STANDARD) {
+            throw new IllegalArgumentException("Poll posts cannot be edited with question update.");
+        }
         if (!Objects.equals(existing.getUser().getId(), me)) {
             throw new IllegalArgumentException("You can only update your own questions.");
         }
@@ -128,7 +181,7 @@ public class QaService {
         existing.setTags(normalizeAndUpsertTags(req.tags()));
 
         Question saved = questionRepository.save(existing);
-        return toResponse(saved);
+        return toResponse(saved, me);
     }
 
     @Transactional
@@ -140,11 +193,64 @@ public class QaService {
             throw new IllegalArgumentException("You can only delete your own questions.");
         }
 
+        if (existing.getQuestionType() == QuestionType.POLL) {
+            pollVoteRepository.deleteByQuestionId(questionId);
+            pollOptionRepository.deleteByQuestionId(questionId);
+            questionRepository.delete(existing);
+            return;
+        }
+
         if (answerRepository.countByQuestionId(questionId) > 0) {
             throw new IllegalArgumentException("Cannot delete a question that already has answers.");
         }
 
         questionRepository.delete(existing);
+    }
+
+    @Transactional
+    public QuestionResponse votePoll(Long questionId, PollVoteRequest req) {
+        Long me = getCurrentUserId();
+        User meUser = userRepository.findById(me).orElseThrow();
+
+        Question question = questionRepository.findById(questionId).orElseThrow();
+        if (question.getQuestionType() != QuestionType.POLL) {
+            throw new IllegalArgumentException("This question is not a poll.");
+        }
+
+        if (question.getPollExpiresAt() != null && question.getPollExpiresAt().isBefore(java.time.Instant.now())) {
+            throw new IllegalArgumentException("This poll is already closed.");
+        }
+
+        PollOption selectedOption = pollOptionRepository.findById(req.optionId()).orElseThrow();
+        if (!Objects.equals(selectedOption.getQuestion().getId(), questionId)) {
+            throw new IllegalArgumentException("Selected option does not belong to this poll.");
+        }
+
+        PollVote existingVote = pollVoteRepository.findByQuestionIdAndUserId(questionId, me).orElse(null);
+
+        if (existingVote == null) {
+            selectedOption.setVoteCount(selectedOption.getVoteCount() + 1);
+            pollOptionRepository.save(selectedOption);
+
+            PollVote vote = PollVote.builder()
+                    .question(question)
+                    .option(selectedOption)
+                    .user(meUser)
+                    .build();
+            pollVoteRepository.save(vote);
+        } else if (!Objects.equals(existingVote.getOption().getId(), selectedOption.getId())) {
+            PollOption previousOption = existingVote.getOption();
+            previousOption.setVoteCount(Math.max(0, previousOption.getVoteCount() - 1));
+            selectedOption.setVoteCount(selectedOption.getVoteCount() + 1);
+            pollOptionRepository.save(previousOption);
+            pollOptionRepository.save(selectedOption);
+
+            existingVote.setOption(selectedOption);
+            pollVoteRepository.save(existingVote);
+        }
+
+        Question refreshed = questionRepository.findById(questionId).orElseThrow();
+        return toResponse(refreshed, me);
     }
 
     public java.util.List<AnswerResponse> listAnswers(Long questionId) {
@@ -159,6 +265,9 @@ public class QaService {
         User meUser = userRepository.findById(me).orElseThrow();
 
         Question q = questionRepository.findById(questionId).orElseThrow();
+        if (q.getQuestionType() != QuestionType.STANDARD) {
+            throw new IllegalArgumentException("Answers are only supported for standard questions.");
+        }
 
         Answer a = Answer.builder()
                 .question(q)
@@ -362,8 +471,32 @@ public class QaService {
         return user.getUsername(); // Adapted: target project User lacks fullName
     }
 
-    private QuestionResponse toResponse(Question q) {
+        private QuestionResponse toResponse(Question q, Long currentUserId) {
         Set<String> tags = (q.getTags() == null) ? Set.of() : q.getTags().stream().map(Tag::getName).collect(Collectors.toSet());
+
+        List<PollOptionResponse> pollOptions = q.getQuestionType() == QuestionType.POLL
+            ? pollOptionRepository.findByQuestionIdOrderBySortOrderAsc(q.getId())
+            .stream()
+            .map(option -> new PollOptionResponse(
+                option.getId(),
+                option.getText(),
+                option.getVoteCount(),
+                option.getSortOrder()
+            ))
+            .toList()
+            : List.of();
+
+        Long votedOptionId = null;
+        if (q.getQuestionType() == QuestionType.POLL && currentUserId != null) {
+            votedOptionId = pollVoteRepository.findByQuestionIdAndUserId(q.getId(), currentUserId)
+                .map(vote -> vote.getOption().getId())
+                .orElse(null);
+        }
+
+        long totalVotes = q.getQuestionType() == QuestionType.POLL
+            ? pollVoteRepository.countByQuestionId(q.getId())
+            : 0L;
+
         return new QuestionResponse(
                 q.getId(),
                 q.getUser().getId(),
@@ -371,12 +504,31 @@ public class QaService {
                 q.getTitle(),
                 q.getDescription(),
                 q.getImageUrl(),
+            q.getQuestionType(),
+            pollOptions,
+            votedOptionId,
+            totalVotes,
+            q.getPollExpiresAt(),
                 q.getStatus(),
                 tags,
                 q.getCreatedAt(),
                 q.getUpdatedAt()
         );
     }
+
+        private List<String> normalizePollOptions(List<String> options) {
+        if (options == null) {
+            return List.of();
+        }
+
+        return options.stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(text -> !text.isBlank())
+            .distinct()
+            .limit(4)
+            .toList();
+        }
 
     private void validateQuestionImage(MultipartFile image) {
         if (image.getSize() > MAX_QUESTION_IMAGE_SIZE_BYTES) {

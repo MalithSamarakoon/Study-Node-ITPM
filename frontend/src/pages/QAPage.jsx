@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { deleteQuestion, getQuestions, getAnswers, updateQuestion } from '../services/qaService';
+import { deleteQuestion, getQuestions, getAnswers, updateQuestion, votePoll } from '../services/qaService';
 import QuestionCard from '../components/qa/QuestionCard';
 import AskQuestionModal from '../components/qa/AskQuestionModal';
+import CreatePollModal from '../components/qa/CreatePollModal';
+import PollCard from '../components/qa/PollCard';
 import { getUserDisplayName } from '../utils/userDisplay';
 import { getAnswerCount } from '../utils/qaCounts';
 import { getUser } from '../utils/auth';
 import '../styles/qa/QAPage.css';
+import '../styles/qa/PollButton.css';
 
 const normalizeTagsInput = (value) => {
   if (!value) return [];
@@ -23,6 +26,7 @@ function QAPage() {
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showPollModal, setShowPollModal] = useState(false);
   const [activeTab, setActiveTab] = useState('RECENT');
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -92,6 +96,10 @@ function QAPage() {
 
     const counts = await Promise.all(
       questionList.map(async (q) => {
+        if (q?.questionType === 'POLL') {
+          return [q.id, 0];
+        }
+
         try {
           const answers = await getAnswers(q.id);
           return [q.id, Array.isArray(answers) ? answers.length : getAnswerCount(q)];
@@ -190,8 +198,20 @@ function QAPage() {
   };
 
   const stats = {
-    questions: questions.length,
-    answers: questions.reduce((sum, q) => sum + getResolvedAnswerCount(q), 0)
+    questions: questions.filter((q) => q.questionType !== 'POLL').length,
+    polls: questions.filter((q) => q.questionType === 'POLL').length,
+    answers: questions
+      .filter((q) => q.questionType !== 'POLL')
+      .reduce((sum, q) => sum + getResolvedAnswerCount(q), 0)
+  };
+
+  const handleVotePoll = async (pollId, optionId) => {
+    try {
+      await votePoll(pollId, optionId);
+      await Promise.all([loadQuestions(), loadRecentActivity()]);
+    } catch (err) {
+      alert(err.message || 'Failed to vote on poll.');
+    }
   };
 
   return (
@@ -224,6 +244,12 @@ function QAPage() {
               </svg>
               Ask A Question
             </button>
+            <button className="add-poll-btn" onClick={() => setShowPollModal(true)}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              Add Poll
+            </button>
           </div>
 
           <div className="sidebar-section">
@@ -235,6 +261,10 @@ function QAPage() {
               <div className="stat-item">
                 <span className="stat-value">{stats.answers}</span>
                 <span className="stat-label">Answers</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-value">{stats.polls}</span>
+                <span className="stat-label">Polls</span>
               </div>
             </div>
           </div>
@@ -279,13 +309,15 @@ function QAPage() {
                   <div 
                     key={`recent-${q.id}`} 
                     className="activity-item"
-                    onClick={() => navigate(`/qa/${q.id}`)}
+                    onClick={() => q.questionType !== 'POLL' && navigate(`/qa/question/${q.id}`)}
                   >
                     <span className="activity-title" title={q.title}>
                       {q.title.length > 40 ? `${q.title.substring(0, 37)}...` : q.title}
                     </span>
                     <span className="activity-count">
-                      {getResolvedAnswerCount(q)} {getResolvedAnswerCount(q) === 1 ? 'answer' : 'answers'}
+                      {q.questionType === 'POLL'
+                        ? `${q.totalVotes || 0} votes`
+                        : `${getResolvedAnswerCount(q)} ${getResolvedAnswerCount(q) === 1 ? 'answer' : 'answers'}`}
                     </span>
                   </div>
                 ))
@@ -329,22 +361,38 @@ function QAPage() {
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor" opacity="0.3">
                   <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/>
                 </svg>
-                <p>No questions found. Be the first to ask!</p>
+                <p>No posts found. Be the first to ask or create a poll!</p>
                 <button className="ask-btn" onClick={() => setShowModal(true)}>
                   Ask a Question
                 </button>
               </div>
             ) : (
-              questions.map((question) => (
-                <QuestionCard
-                  key={question.id}
-                  question={question}
-                  answerCountOverride={resolvedAnswerCounts[question.id]}
-                  canManage={Number(question.userId) === Number(user?.id)}
-                  onEdit={openEditModal}
-                  onDelete={handleDeleteQuestion}
-                />
-              ))
+              questions.map((question) => {
+                const canManage = Number(question.userId) === Number(user?.id);
+
+                if (question.questionType === 'POLL') {
+                  return (
+                    <PollCard
+                      key={question.id}
+                      poll={question}
+                      canManage={canManage}
+                      onVote={handleVotePoll}
+                      onDelete={handleDeleteQuestion}
+                    />
+                  );
+                }
+
+                return (
+                  <QuestionCard
+                    key={question.id}
+                    question={question}
+                    answerCountOverride={resolvedAnswerCounts[question.id]}
+                    canManage={canManage}
+                    onEdit={openEditModal}
+                    onDelete={handleDeleteQuestion}
+                  />
+                );
+              })
             )}
           </div>
         </main>
@@ -353,6 +401,15 @@ function QAPage() {
       {showModal && (
         <AskQuestionModal
           onClose={() => setShowModal(false)}
+          onSuccess={async () => {
+            await Promise.all([loadQuestions(), loadRecentActivity()]);
+          }}
+        />
+      )}
+
+      {showPollModal && (
+        <CreatePollModal
+          onClose={() => setShowPollModal(false)}
           onSuccess={async () => {
             await Promise.all([loadQuestions(), loadRecentActivity()]);
           }}

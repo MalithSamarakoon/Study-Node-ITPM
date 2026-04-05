@@ -31,6 +31,12 @@ public class QaController {
         return ResponseEntity.ok(qaService.createQuestion(req));
     }
 
+    @PostMapping(value = "/polls", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
+    public ResponseEntity<QuestionResponse> createPoll(@Validated @RequestBody PollCreateRequest req) {
+        return ResponseEntity.ok(qaService.createPoll(req));
+    }
+
     @PostMapping(value = "/questions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ROLE_STUDENT')")
     public ResponseEntity<QuestionResponse> createQuestionWithImage(
@@ -73,6 +79,12 @@ public class QaController {
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long id) {
         qaService.deleteQuestion(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/polls/{id}/vote")
+    @PreAuthorize("hasRole('ROLE_STUDENT')")
+    public ResponseEntity<QuestionResponse> votePoll(@PathVariable Long id, @Validated @RequestBody PollVoteRequest req) {
+        return ResponseEntity.ok(qaService.votePoll(id, req));
     }
 
     @GetMapping("/questions/{id}/answers")

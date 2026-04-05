@@ -62,6 +62,20 @@ export const createQuestion = (questionData) => {
   return post('/api/qa/questions', payload);
 };
 
+export const createPoll = (pollData) => {
+  const payload = {
+    title: pollData.title,
+    options: pollData.options || [],
+    expiresInDays: pollData.expiresInDays || 7
+  };
+
+  return post('/api/qa/polls', payload);
+};
+
+export const votePoll = (questionId, optionId) => {
+  return post(`/api/qa/polls/${questionId}/vote`, { optionId });
+};
+
 export const getSimilarQuestions = (title, page = 0, size = 5) => {
   const queryParams = new URLSearchParams({ title, page, size });
   return get(`/api/qa/questions/similar?${queryParams}`);
