@@ -116,7 +116,11 @@ const RegistrationForm = () => {
                 setFormData(initialState);
                 setErrors({});
             }catch(error){
-                const errorMessage = error.response?.data?.message || "Registration failed. Please try again.";
+                const errorMessage =
+                    error.response?.data?.error ||
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Registration failed. Please try again.";
                 toast.error(errorMessage);
 
             }finally {
