@@ -17,26 +17,29 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // 1. Call the endpoint you created in AuthController.java
             const response = await axios.post("http://localhost:8080/api/auth/signin", {
                 username,
                 password
             });
 
-            // 2. If we get a token back, save the user object in Local Storage
             if (response.data.token) {
                 localStorage.setItem("user", JSON.stringify(response.data));
 
-                // 3. Redirect the student to the dashboard or home
-                navigate("/");
+                // Notify Navbar and other listeners
+                window.dispatchEvent(new Event("authChange"));
+
+                // Redirect based on role — backend returns roles as an array: ["ROLE_ADMIN"]
+                const roles = Array.isArray(response.data.roles)
+                    ? response.data.roles
+                    : [response.data.role || ''];
+
+                if (roles.includes('ROLE_ADMIN') || roles.includes('ADMIN')) {
+                    navigate("/admin/modules");
+                } else {
+                    navigate("/resources/modules");
+                }
             }
         } catch (error) {
-            // 4. Handle errors (e.g., wrong password or server down)
-            const resMessage =
-                (error.response && error.response.data && error.response.data.message) ||
-                error.message ||
-                error.toString();
-
             setMessage("Invalid username or password. Please try again.");
             setLoading(false);
         }
