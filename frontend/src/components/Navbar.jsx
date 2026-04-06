@@ -29,7 +29,7 @@ const Navbar = () => {
                     ) : (
                         <>
                             <Link to="/login" className="text-sm font-semibold text-[#8a512a] hover:underline">Login</Link>
-                            <Link to="/register" className="rounded-lg bg-[#ef8f31] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#df7f21]">Register</Link>
+                                <Link to="/register" className="rounded-lg bg-[#ef8f31] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#df7f21]">Register</Link>
                         </>
                     )}
                 </div>
