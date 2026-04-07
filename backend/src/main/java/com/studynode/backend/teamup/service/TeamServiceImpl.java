@@ -44,12 +44,15 @@ public class TeamServiceImpl implements TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final org.practicals.backend.repository.userManagement.UserRepository appUserRepository;
 
     public TeamServiceImpl(TeamRepository teamRepository, TeamMemberRepository teamMemberRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           org.practicals.backend.repository.userManagement.UserRepository appUserRepository) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
+        this.appUserRepository = appUserRepository;
     }
 
     @Override
@@ -339,8 +342,23 @@ public class TeamServiceImpl implements TeamService {
             return mapped;
         }
 
+        org.practicals.backend.model.userManagement.User appUser = appUserRepository.findById(preferredUserId).orElse(null);
+        if (appUser != null) {
+            User byRealEmail = userRepository.findByEmailIgnoreCase(appUser.getEmail()).orElse(null);
+            if (byRealEmail != null) {
+                return byRealEmail;
+            }
+
+            User fromAppUser = new User();
+            fromAppUser.setName(appUser.getUsername());
+            fromAppUser.setEmail(appUser.getEmail());
+            fromAppUser.setPassword("mapped-user");
+            fromAppUser.setRole(UserRole.STUDENT);
+            return userRepository.save(fromAppUser);
+        }
+
         User created = new User();
-        created.setName("Student " + preferredUserId);
+        created.setName("User " + preferredUserId);
         created.setEmail(mappedEmail);
         created.setPassword("mapped-user");
         created.setRole(UserRole.STUDENT);

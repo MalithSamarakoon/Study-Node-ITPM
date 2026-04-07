@@ -3,13 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getTeamById, updateTeam } from "../api/teamApi.js";
 import { mockTeams } from "../data/mockTeamupData.js";
 import { buildDescriptionWithMeta, parseTeamMeta } from "../utils/teamMeta.js";
-import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const user = useCurrentUser();
-  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
 
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -78,10 +75,6 @@ function TeamEditPage() {
 
   if (!team) {
     return <p className="text-sm text-slate-600">Team not found.</p>;
-  }
-
-  if (String(team.createdByUserId) !== currentUserId) {
-    return <p className="text-sm text-rose-600">You don't have permission to edit this team.</p>;
   }
 
   function addSkill(rawValue) {

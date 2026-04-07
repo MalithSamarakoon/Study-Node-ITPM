@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   approveMembershipRequest,
   deleteTeam,
+  getCreatedTeams,
   getTeamById,
   getTeamMembers,
   joinTeam,
@@ -28,23 +29,27 @@ function TeamDetailsPage() {
   const [joining, setJoining] = useState(false);
   const [updatingMemberId, setUpdatingMemberId] = useState(null);
   const [isMockMode, setIsMockMode] = useState(false);
+  const [isLeaderView, setIsLeaderView] = useState(false);
 
   async function loadTeamDetails(teamId) {
     setLoading(true);
     setError("");
 
     try {
-      const [teamData, membersData] = await Promise.all([
+      const [teamData, membersData, createdTeams] = await Promise.all([
         getTeamById(teamId),
         getTeamMembers(teamId),
+        getCreatedTeams(currentUserId),
       ]);
       setTeam(teamData);
       setMembers(membersData);
+      setIsLeaderView(createdTeams.some((createdTeam) => String(createdTeam.id) === String(teamId)));
       setIsMockMode(false);
     } catch {
       const fallbackTeam = mockTeams.find((mock) => String(mock.id) === String(teamId)) || mockTeams[0];
       setTeam(fallbackTeam || null);
       setMembers(mockMembersByTeamId[fallbackTeam?.id] || []);
+      setIsLeaderView(false);
       setIsMockMode(true);
       setError("Backend unavailable. Showing dummy TeamUp details.");
     } finally {
@@ -173,7 +178,6 @@ function TeamDetailsPage() {
   const currentMembers = members.filter((member) => member.status === "APPROVED");
   const pendingMembers = members.filter((member) => member.status === "PENDING");
   const uiStatus = formatTeamStatus(team.status, team.memberCount, meta.maxMembers);
-  const isLeaderView = String(team.createdByUserId) === currentUserId;
 
   return (
     <section className="space-y-5 text-[#6a3a1a]">

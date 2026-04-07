@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   deleteTeam,
+  getCreatedTeams,
   getJoinedTeams,
   getTeams,
   joinTeam,
@@ -42,6 +43,7 @@ function TeamListPage({ onlyMine = false }) {
     deleting: false,
   });
   const [isMockMode, setIsMockMode] = useState(false);
+  const [ownedTeamIds, setOwnedTeamIds] = useState(new Set());
 
   const loadTeams = useCallback(async (skill) => {
     setLoading(true);
@@ -49,36 +51,31 @@ function TeamListPage({ onlyMine = false }) {
 
     try {
       let data = [];
+      let ownedTeams = [];
 
       if (onlyMine) {
-        data = await getJoinedTeams(currentUserId);
+        data = await getCreatedTeams(currentUserId, skill);
       } else {
         data = await getTeams(skill);
+        ownedTeams = await getCreatedTeams(currentUserId);
       }
+
+      if (onlyMine) {
+        ownedTeams = data;
+      }
+
+      setOwnedTeamIds(new Set(ownedTeams.map((team) => team.id)));
 
       const resolved = data.length > 0 ? data : mockTeams;
       if (onlyMine) {
-        const filteredMock = resolved.filter((team) => {
-          const members = mockMembersByTeamId[team.id] || [];
-          return members.some(
-            (member) =>
-              String(member.userId) === currentUserId && member.status !== "REJECTED",
-          );
-        });
-        setTeams(data.length > 0 ? data : filteredMock);
+        setTeams(resolved);
       } else {
         setTeams(data.length > 0 ? data : resolved);
       }
       setIsMockMode(data.length === 0);
     } catch {
       if (onlyMine) {
-        const filteredMock = mockTeams.filter((team) => {
-          const members = mockMembersByTeamId[team.id] || [];
-          return members.some(
-            (member) =>
-              String(member.userId) === currentUserId && member.status !== "REJECTED",
-          );
-        });
+        const filteredMock = mockTeams.filter((team) => ownedTeamIds.has(team.id));
         setTeams(filteredMock);
       } else {
         setTeams(mockTeams);
@@ -259,7 +256,7 @@ function TeamListPage({ onlyMine = false }) {
 
       <div className="grid gap-4">
         {list.map((team) => {
-          const isOwner = String(team.createdByUserId) === currentUserId;
+          const isOwner = ownedTeamIds.has(team.id);
           const isOpen = team.status !== "CLOSED";
           const canToggleStatus = ["PENDING", "APPROVED", "ACTIVE", "CLOSED"].includes(team.status);
 
@@ -333,19 +330,19 @@ function TeamListPage({ onlyMine = false }) {
                   {joiningTeamId === team.id ? "Sending..." : "Request to Join"}
                 </button>
               ) : null}
-              {isOwner ? (
+              {onlyMine && isOwner ? (
                 <>
                   <Link
                     to={`/teams/${team.id}/edit`}
                     className="rounded-xl border border-[#daac8c] bg-[#fff1e5] px-4 py-2.5 text-base font-semibold text-[#7e461f] hover:bg-[#ffe0cc]"
                   >
-                    ✏️ Edit
+                    Edit
                   </Link>
                   <button
                     onClick={() => openDeleteModal(team)}
                     className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-base font-semibold text-rose-700 hover:bg-rose-100"
                   >
-                    🗑️ Delete
+                    Delete
                   </button>
                 </>
               ) : null}
