@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   approveMembershipRequest,
+  deleteTeam,
   getTeamById,
   getTeamMembers,
   joinTeam,
@@ -139,6 +140,22 @@ function TeamDetailsPage() {
     }
   }
 
+  async function handleDeleteTeam() {
+    const confirmed = window.confirm("Are you sure you want to delete this team?");
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      if (!isMockMode) {
+        await deleteTeam(id);
+      }
+      navigate("/teams");
+    } catch (deleteError) {
+      setError(deleteError.message || "Failed to delete team.");
+    }
+  }
+
   if (loading) {
     return <p className="text-sm text-slate-700">Loading team details...</p>;
   }
@@ -203,6 +220,21 @@ function TeamDetailsPage() {
 
         {isLeaderView ? (
           <div className="mt-7 rounded-2xl border border-[#ebd6c8] bg-[#fff7f0] p-4">
+            <div className="mb-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate(`/teams/${id}/edit`)}
+                className="rounded-lg border border-[#d0aa8f] bg-white px-3 py-2 text-sm font-semibold text-[#7e461f]"
+              >
+                Edit Team
+              </button>
+              <button
+                onClick={handleDeleteTeam}
+                className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+              >
+                Delete Team
+              </button>
+            </div>
+
             <h3 className="text-2xl font-bold text-[#7c3f16]">
               Join Requests ({pendingMembers.length})
             </h3>

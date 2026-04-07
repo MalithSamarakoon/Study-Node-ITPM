@@ -259,7 +259,7 @@ function TeamListPage({ onlyMine = false }) {
 
       <div className="grid gap-4">
         {list.map((team) => {
-          const isOwner = onlyMine && String(team.createdByUserId) === currentUserId;
+          const isOwner = String(team.createdByUserId) === currentUserId;
           const isOpen = team.status !== "CLOSED";
           const canToggleStatus = ["PENDING", "APPROVED", "ACTIVE", "CLOSED"].includes(team.status);
 
@@ -324,7 +324,7 @@ function TeamListPage({ onlyMine = false }) {
               >
                 View Details
               </Link>
-              {!onlyMine && String(team.createdByUserId) !== currentUserId ? (
+              {!isOwner ? (
                 <button
                   onClick={() => openJoinModal(team)}
                   disabled={joiningTeamId === team.id}

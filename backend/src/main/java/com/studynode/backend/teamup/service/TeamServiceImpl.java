@@ -78,12 +78,13 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional(readOnly = true)
     public List<TeamResponse> getJoinedTeams(Long userId) {
-        if (!userRepository.existsById(userId)) {
+        User currentUser = resolveExistingUser(userId);
+        if (currentUser == null) {
             return List.of();
         }
 
         List<TeamMember> memberships = teamMemberRepository.findByUserIdAndStatusIn(
-                userId,
+                currentUser.getId(),
                 List.of(MembershipStatus.PENDING, MembershipStatus.APPROVED));
 
         Map<Long, TeamResponse> uniqueTeams = new LinkedHashMap<>();
@@ -98,11 +99,12 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional(readOnly = true)
     public List<TeamMembershipStatusResponse> getMembershipStatuses(Long userId) {
-        if (!userRepository.existsById(userId)) {
+        User currentUser = resolveExistingUser(userId);
+        if (currentUser == null) {
             return List.of();
         }
 
-        return teamMemberRepository.findByUserIdOrderByUpdatedAtDesc(userId)
+        return teamMemberRepository.findByUserIdOrderByUpdatedAtDesc(currentUser.getId())
                 .stream()
                 .map(member -> new TeamMembershipStatusResponse(
                         member.getTeam().getId(),
@@ -136,15 +138,16 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional(readOnly = true)
     public List<TeamResponse> getCreatedTeams(Long userId, String skill) {
-        if (!userRepository.existsById(userId)) {
+        User currentUser = resolveExistingUser(userId);
+        if (currentUser == null) {
             return List.of();
         }
 
         List<Team> teams;
         if (skill != null && !skill.isBlank()) {
-            teams = teamRepository.findByCreatedByIdAndRequiredSkillsContainingIgnoreCase(userId, skill.trim());
+            teams = teamRepository.findByCreatedByIdAndRequiredSkillsContainingIgnoreCase(currentUser.getId(), skill.trim());
         } else {
-            teams = teamRepository.findByCreatedById(userId);
+            teams = teamRepository.findByCreatedById(currentUser.getId());
         }
 
         return teams.stream().map(this::toTeamResponse).toList();
@@ -302,11 +305,9 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private User resolveUserOrFallback(Long preferredUserId, String fallbackName) {
-        if (preferredUserId != null) {
-            User existing = userRepository.findById(preferredUserId).orElse(null);
-            if (existing != null) {
-                return existing;
-            }
+        User existing = resolveExistingUser(preferredUserId);
+        if (existing != null) {
+            return existing;
         }
 
         User firstStudent = userRepository.findFirstByRoleOrderByIdAsc(UserRole.STUDENT).orElse(null);
@@ -320,6 +321,30 @@ public class TeamServiceImpl implements TeamService {
         fallback.setPassword("fallback-user");
         fallback.setRole(UserRole.STUDENT);
         return userRepository.save(fallback);
+    }
+
+    private User resolveExistingUser(Long preferredUserId) {
+        if (preferredUserId == null) {
+            return null;
+        }
+
+        User byId = userRepository.findById(preferredUserId).orElse(null);
+        if (byId != null) {
+            return byId;
+        }
+
+        String mappedEmail = "mapped-user-" + preferredUserId + "@local";
+        User mapped = userRepository.findByEmailIgnoreCase(mappedEmail).orElse(null);
+        if (mapped != null) {
+            return mapped;
+        }
+
+        User created = new User();
+        created.setName("Student " + preferredUserId);
+        created.setEmail(mappedEmail);
+        created.setPassword("mapped-user");
+        created.setRole(UserRole.STUDENT);
+        return userRepository.save(created);
     }
 
     private TeamResponse toTeamResponse(Team team) {
