@@ -8,7 +8,7 @@ import {
   updateTeamStatus,
 } from "../api/teamApi.js";
 import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
-import { useAuth } from "../../auth/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser.js";
 import {
   formatTeamStatus,
   parseTeamMeta,
@@ -16,7 +16,7 @@ import {
 } from "../utils/teamMeta.js";
 
 function TeamListPage({ onlyMine = false }) {
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
   const navigate = useNavigate();
 

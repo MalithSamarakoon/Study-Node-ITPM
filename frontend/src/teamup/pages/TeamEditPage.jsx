@@ -3,12 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getTeamById, updateTeam } from "../api/teamApi.js";
 import { mockTeams } from "../data/mockTeamupData.js";
 import { buildDescriptionWithMeta, parseTeamMeta } from "../utils/teamMeta.js";
-import { useAuth } from "../../auth/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
 
   const [team, setTeam] = useState(null);

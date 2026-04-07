@@ -1,10 +1,7 @@
 import React from 'react';
 import { Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext.jsx";
 
 const Navbar = () => {
-    const { user, isAuthenticated, logout } = useAuth();
-
     return (
         <header className="w-full">
             <div className="flex justify-between items-center px-8 py-4 bg-white">
@@ -14,24 +11,9 @@ const Navbar = () => {
                     <span className="text-xl font-bold text-gray-800">Study Node</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    {isAuthenticated ? (
-                        <>
-                            <span className="rounded-full bg-orange-50 px-3 py-1 text-sm font-semibold text-[#8a512a]">
-                                {user?.name}
-                            </span>
-                            <button
-                                onClick={logout}
-                                className="rounded-lg border border-[#e8a89f] bg-white px-3 py-1.5 text-sm font-semibold text-[#c65c50] hover:bg-[#fef4f2]"
-                            >
-                                Logout
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <Link to="/login" className="text-sm font-semibold text-[#8a512a] hover:underline">Login</Link>
-                                <Link to="/register" className="rounded-lg bg-[#ef8f31] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#df7f21]">Register</Link>
-                        </>
-                    )}
+                    <Link to="/teams" className="rounded-lg bg-[#ef8f31] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#df7f21]">
+                        Explore Teams
+                    </Link>
                 </div>
             </div>
 

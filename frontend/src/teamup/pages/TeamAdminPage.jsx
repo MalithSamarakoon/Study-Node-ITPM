@@ -5,10 +5,10 @@ import {
   getTeamMembers,
   rejectMembershipRequest,
 } from "../api/teamApi.js";
-import { useAuth } from "../../auth/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamAdminPage() {
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
 
   const [loading, setLoading] = useState(true);

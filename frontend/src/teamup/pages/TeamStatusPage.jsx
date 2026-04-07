@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getCreatedTeams, getTeamMembers } from "../api/teamApi.js";
-import { useAuth } from "../../auth/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamStatusPage() {
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
   const [teamsWithMembers, setTeamsWithMembers] = useState([]);
   const [loading, setLoading] = useState(true);

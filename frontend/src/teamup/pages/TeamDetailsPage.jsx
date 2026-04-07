@@ -9,10 +9,10 @@ import {
 } from "../api/teamApi.js";
 import { mockMembersByTeamId, mockTeams } from "../data/mockTeamupData.js";
 import { formatTeamStatus, parseTeamMeta, splitSkills } from "../utils/teamMeta.js";
-import { useAuth } from "../../auth/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamDetailsPage() {
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
   const navigate = useNavigate();
 

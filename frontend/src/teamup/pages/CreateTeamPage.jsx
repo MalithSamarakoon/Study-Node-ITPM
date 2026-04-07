@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { createTeam } from "../api/teamApi.js";
 import { buildDescriptionWithMeta } from "../utils/teamMeta.js";
-import { useAuth } from "../../auth/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 const initialForm = {
   title: "AI Research Project",
@@ -16,7 +16,7 @@ const initialForm = {
 
 function CreateTeamPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = useCurrentUser();
   const currentUserId = Number(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
 
   const [form, setForm] = useState(initialForm);

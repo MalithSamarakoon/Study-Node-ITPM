@@ -1,6 +1,6 @@
 import { Bell, Mail, UserRound } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
-import { useAuth } from "../../auth/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 const linkClasses = ({ isActive }) =>
   [
@@ -11,7 +11,7 @@ const linkClasses = ({ isActive }) =>
   ].join(" ");
 
 function TeamupLayout() {
-  const { user, logout } = useAuth();
+  const user = useCurrentUser();
 
   return (
     <div className="min-h-screen bg-[#fdf2e8] px-2 py-3 text-[#693919] sm:px-5 sm:py-5">
@@ -53,12 +53,6 @@ function TeamupLayout() {
                 <UserRound size={16} />
                 {user?.name || "Student"}
               </div>
-              <button
-                onClick={logout}
-                className="rounded-xl border border-[#e8a89f] bg-white px-3 py-1.5 text-sm font-semibold text-[#c65c50] hover:bg-[#fef4f2]"
-              >
-                Logout
-              </button>
             </div>
           </header>
 
