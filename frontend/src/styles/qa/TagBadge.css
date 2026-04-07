@@ -1,0 +1,19 @@
+/* Tag Badge Styles */
+.tag-badge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border: 1px solid #667eea30;
+  color: #667eea;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tag-badge:hover {
+  background: linear-gradient(135deg, #667eea25 0%, #764ba225 100%);
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
