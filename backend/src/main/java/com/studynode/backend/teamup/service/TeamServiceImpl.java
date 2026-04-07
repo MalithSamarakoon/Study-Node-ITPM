@@ -18,6 +18,7 @@ import com.studynode.backend.teamup.enums.UserRole;
 import com.studynode.backend.teamup.repository.TeamMemberRepository;
 import com.studynode.backend.teamup.repository.TeamRepository;
 import com.studynode.backend.teamup.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -75,7 +76,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public List<TeamResponse> getJoinedTeams(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found");
+            return List.of();
         }
 
         List<TeamMember> memberships = teamMemberRepository.findByUserIdAndStatusIn(
@@ -95,7 +96,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public List<TeamMembershipStatusResponse> getMembershipStatuses(Long userId) {
         if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found");
+            return List.of();
         }
 
         return teamMemberRepository.findByUserIdOrderByUpdatedAtDesc(userId)
@@ -133,7 +134,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public List<TeamResponse> getCreatedTeams(Long userId, String skill) {
         if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found");
+            return List.of();
         }
 
         List<Team> teams;
@@ -150,8 +151,7 @@ public class TeamServiceImpl implements TeamService {
     public String requestToJoin(Long teamId, JoinTeamRequest request) {
         Team team = findTeamOrThrow(teamId);
 
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = resolveUserOrFallback(request.userId(), "TeamUp Member");
 
         if (teamMemberRepository.findByTeamIdAndUserId(teamId, user.getId()).isPresent()) {
             throw new BadRequestException("Join request already exists for this user");
@@ -215,12 +215,8 @@ public class TeamServiceImpl implements TeamService {
 
         return teamMemberRepository.findByTeamId(teamId)
                 .stream()
-                .map(member -> new TeamMemberResponse(
-                        member.getId(),
-                        member.getUser().getId(),
-                        member.getUser().getName(),
-                        member.getRoleInTeam(),
-                        member.getStatus()))
+            .map(this::toTeamMemberResponseSafe)
+            .filter(response -> response != null)
                 .toList();
     }
 
@@ -299,24 +295,43 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private User resolveCreatorUser(Long creatorUserId) {
-        if (creatorUserId != null) {
-            return userRepository.findById(creatorUserId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Creator user not found"));
+        return resolveUserOrFallback(creatorUserId, "TeamUp Creator");
+    }
+
+    private User resolveUserOrFallback(Long preferredUserId, String fallbackName) {
+        if (preferredUserId != null) {
+            User existing = userRepository.findById(preferredUserId).orElse(null);
+            if (existing != null) {
+                return existing;
+            }
         }
 
-        return userRepository.findFirstByRoleOrderByIdAsc(UserRole.STUDENT)
-                .orElseGet(() -> {
-                    User fallback = new User();
-                    fallback.setName("TeamUp Creator");
-                    fallback.setEmail("teamup-creator@local");
-                    fallback.setPassword("fallback-creator");
-                    fallback.setRole(UserRole.STUDENT);
-                    return userRepository.save(fallback);
-                });
+        User firstStudent = userRepository.findFirstByRoleOrderByIdAsc(UserRole.STUDENT).orElse(null);
+        if (firstStudent != null) {
+            return firstStudent;
+        }
+
+        User fallback = new User();
+        fallback.setName(fallbackName);
+        fallback.setEmail("teamup-" + System.currentTimeMillis() + "@local");
+        fallback.setPassword("fallback-user");
+        fallback.setRole(UserRole.STUDENT);
+        return userRepository.save(fallback);
     }
 
     private TeamResponse toTeamResponse(Team team) {
         long memberCount = teamMemberRepository.countByTeamIdAndStatus(team.getId(), MembershipStatus.APPROVED);
+
+        Long createdByUserId = null;
+        String createdByName = "Unknown";
+        try {
+            if (team.getCreatedBy() != null) {
+                createdByUserId = team.getCreatedBy().getId();
+                createdByName = team.getCreatedBy().getName();
+            }
+        } catch (EntityNotFoundException ignored) {
+            // Keep fallback values for orphaned legacy rows.
+        }
 
         return new TeamResponse(
                 team.getId(),
@@ -324,9 +339,26 @@ public class TeamServiceImpl implements TeamService {
                 team.getDescription(),
                 team.getRequiredSkills(),
                 team.getStatus(),
-                team.getCreatedBy().getId(),
-            team.getCreatedBy().getName(),
-            memberCount,
+                createdByUserId,
+                createdByName,
+                memberCount,
                 team.getCreatedAt());
+    }
+
+    private TeamMemberResponse toTeamMemberResponseSafe(TeamMember member) {
+        try {
+            if (member.getUser() == null) {
+                return null;
+            }
+
+            return new TeamMemberResponse(
+                    member.getId(),
+                    member.getUser().getId(),
+                    member.getUser().getName(),
+                    member.getRoleInTeam(),
+                    member.getStatus());
+        } catch (EntityNotFoundException ignored) {
+            return null;
+        }
     }
 }
