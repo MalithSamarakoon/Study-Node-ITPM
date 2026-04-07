@@ -1,6 +1,9 @@
 package com.studynode.backend.teamup.entity;
 
+import java.time.LocalDateTime;
+
 import com.studynode.backend.teamup.enums.MembershipStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
@@ -17,7 +20,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "team_members", uniqueConstraints = {

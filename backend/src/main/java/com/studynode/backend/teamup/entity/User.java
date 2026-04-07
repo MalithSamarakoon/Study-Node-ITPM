@@ -1,6 +1,7 @@
 package com.studynode.backend.teamup.entity;
 
 import com.studynode.backend.teamup.enums.UserRole;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

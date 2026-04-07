@@ -1,10 +1,12 @@
 package com.studynode.backend.teamup.repository;
 
-import com.studynode.backend.teamup.entity.User;
-import com.studynode.backend.teamup.enums.UserRole;
 import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.studynode.backend.teamup.entity.User;
+import com.studynode.backend.teamup.enums.UserRole;
 
 @Repository("teamupUserRepository")
 public interface UserRepository extends JpaRepository<User, Long> {
