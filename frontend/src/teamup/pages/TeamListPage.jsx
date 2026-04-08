@@ -227,27 +227,27 @@ function TeamListPage({ onlyMine = false }) {
   }
 
   return (
-    <section className="space-y-5 text-[#6a3a1a]">
-      <div className="rounded-3xl border border-[#f0d7c5] bg-[#fff8f2] p-5">
-        <h2 className="text-4xl font-extrabold text-[#7f3f16]">
+    <section className="space-y-6 text-slate-800">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-3xl font-extrabold text-slate-900 sm:text-4xl">
           {onlyMine ? "My Teams" : "TeamUp - Find or Create Teams"}
         </h2>
-        <p className="mt-2 text-lg text-[#8d5a39]">
+        <p className="mt-2 text-base text-slate-600 sm:text-lg">
           A platform for finding partners for projects, hackathons, and academic events.
         </p>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_190px_190px_auto]">
+        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_180px_140px]">
           <input
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
-            className="rounded-2xl border border-[#efcfbb] bg-white px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
             placeholder="Search Teams..."
           />
 
           <select
             value={typeFilter}
             onChange={(event) => setTypeFilter(event.target.value)}
-            className="rounded-2xl border border-[#efcfbb] bg-white px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
           >
             <option value="ALL">Filter: All</option>
             <option value="PROJECT">Filter: Project</option>
@@ -256,7 +256,7 @@ function TeamListPage({ onlyMine = false }) {
 
           <button
             onClick={() => loadTeams("")}
-            className="rounded-2xl border border-[#efcfbb] bg-white px-4 py-3 text-lg font-semibold text-[#7d4824] hover:bg-[#fff2e8]"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Refresh
           </button>
@@ -264,11 +264,11 @@ function TeamListPage({ onlyMine = false }) {
 
       </div>
 
-      {loading ? <p className="text-base text-[#8d5a39]">Loading teams...</p> : null}
+      {loading ? <p className="text-sm text-slate-600">Loading teams...</p> : null}
       {error ? <p className="text-base text-rose-700">{error}</p> : null}
 
       {!loading && !error && list.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-[#dbb89f] bg-[#fffdfb] p-5 text-base text-[#8d5a39]">
+        <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-base text-slate-600">
           No teams found.
         </p>
       ) : null}
@@ -282,25 +282,25 @@ function TeamListPage({ onlyMine = false }) {
           return (
           <article
             key={team.id}
-            className="rounded-3xl border border-[#e7c8b2] bg-[#fffdfb] p-6 shadow-[0_8px_18px_rgba(126,59,18,0.06)]"
+            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 className="text-4xl font-bold text-[#7b3f17]">{team.title}</h3>
-                <p className="mt-1 text-lg text-[#85522f]">Type: {team.meta.type}</p>
-                <p className="text-lg text-[#85522f]">Created by: {team.createdByName}</p>
-                <p className="text-lg text-[#85522f]">
+                <h3 className="text-2xl font-bold text-slate-900 sm:text-3xl">{team.title}</h3>
+                <p className="mt-1 text-base text-slate-600">Type: {team.meta.type}</p>
+                <p className="text-base text-slate-600">Created by: {team.createdByName}</p>
+                <p className="text-base text-slate-600">
                   Members: {team.memberCount} / {team.meta.maxMembers}
                 </p>
-                <p className="text-lg text-[#85522f]">
+                <p className="text-base text-slate-600">
                   Skills Needed: {team.skills.join(", ") || "Not specified"}
                 </p>
-                <p className="text-lg font-semibold text-[#9c4f1b]">Status: {team.cardStatus}</p>
+                <p className="text-base font-semibold text-slate-700">Status: {team.cardStatus}</p>
               </div>
 
               <div className="flex items-center gap-2">
                 {requestPendingIds[team.id] ? (
-                  <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
+                  <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">
                     Request Pending
                   </span>
                 ) : null}
@@ -311,7 +311,7 @@ function TeamListPage({ onlyMine = false }) {
                     aria-checked={isOpen}
                     onClick={() => handleOwnerStatusToggle(team.id, isOpen ? "CLOSED" : "ACTIVE")}
                     disabled={statusUpdatingTeamId === team.id || !canToggleStatus}
-                    className="inline-flex items-center gap-2 rounded-xl border border-[#d8b89f] bg-[#fff7f0] px-3 py-2 text-sm font-semibold text-[#7e461f] disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     <span className={`relative h-6 w-11 rounded-full transition ${isOpen ? "bg-emerald-500" : "bg-slate-300"}`}>
                       <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${isOpen ? "translate-x-5" : "translate-x-0"}`} />
@@ -324,19 +324,19 @@ function TeamListPage({ onlyMine = false }) {
               </div>
             </div>
 
-            <div className="my-4 border-t border-[#efdfd2]" />
+            <div className="my-4 border-t border-slate-200" />
 
-            <p className="text-lg text-[#7e4c2a]">
+            <p className="text-base text-slate-700 sm:text-lg">
               {team.meta.cleanDescription || "No description provided."}
             </p>
-            <p className="mt-2 text-base text-[#8f5f41]">
+            <p className="mt-2 text-sm text-slate-500 sm:text-base">
               Deadline: {team.meta.deadline || "Not specified"}
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 to={`/teams/${team.id}`}
-                className="rounded-xl border border-[#daac8c] px-4 py-2.5 text-base font-semibold text-[#7e461f] hover:bg-[#fff1e5]"
+                className="rounded-xl border border-slate-300 px-4 py-2.5 text-base font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 View Details
               </Link>
@@ -344,7 +344,7 @@ function TeamListPage({ onlyMine = false }) {
                 requestPendingIds[team.id] ? (
                   <button
                     disabled
-                    className="rounded-xl bg-amber-100 px-4 py-2.5 text-base font-semibold text-amber-800 disabled:cursor-not-allowed"
+                    className="rounded-xl bg-blue-100 px-4 py-2.5 text-base font-semibold text-blue-800 disabled:cursor-not-allowed"
                   >
                     Requested
                   </button>
@@ -352,7 +352,7 @@ function TeamListPage({ onlyMine = false }) {
                   <button
                     onClick={() => openJoinModal(team)}
                     disabled={joiningTeamId === team.id}
-                    className="rounded-xl bg-[#ef8f31] px-4 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21] disabled:cursor-not-allowed disabled:opacity-70"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-base font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {joiningTeamId === team.id ? "Sending..." : "Request to Join"}
                   </button>
@@ -362,7 +362,7 @@ function TeamListPage({ onlyMine = false }) {
                 <>
                   <Link
                     to={`/teams/${team.id}/edit`}
-                    className="rounded-xl border border-[#daac8c] bg-[#fff1e5] px-4 py-2.5 text-base font-semibold text-[#7e461f] hover:bg-[#ffe0cc]"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-base font-semibold text-slate-700 transition hover:bg-slate-100"
                   >
                     Edit
                   </Link>
@@ -407,7 +407,7 @@ function TeamListPage({ onlyMine = false }) {
               </button>
               <button
                 onClick={sendJoinRequest}
-                className="rounded-xl bg-[#ef8f31] px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Send Request
               </button>

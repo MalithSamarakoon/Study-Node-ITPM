@@ -183,10 +183,10 @@ function TeamDetailsPage() {
   const isAlreadyMember = currentUserMembership?.status === "APPROVED";
 
   return (
-    <section className="space-y-5 text-[#6a3a1a]">
-      <article className="rounded-3xl border border-[#e8cab5] bg-[#fffdfb] p-6 shadow-[0_8px_20px_rgba(123,63,23,0.06)]">
-        <h2 className="text-5xl font-extrabold text-[#7b3f17]">{team.title}</h2>
-        <div className="mt-4 grid gap-1 text-lg text-[#83522f]">
+    <section className="space-y-5 text-slate-800">
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-5xl font-extrabold text-slate-900">{team.title}</h2>
+        <div className="mt-4 grid gap-1 text-lg text-slate-600">
           <p>Created by: {team.createdByName}</p>
           <p>Type: {meta.type}</p>
           <p>
@@ -197,8 +197,8 @@ function TeamDetailsPage() {
         </div>
 
         <div className="mt-6">
-          <h3 className="text-2xl font-bold text-[#7c3f16]">Required Skills:</h3>
-          <ul className="mt-2 space-y-1 text-lg text-[#885533]">
+          <h3 className="text-2xl font-bold text-slate-900">Required Skills:</h3>
+          <ul className="mt-2 space-y-1 text-lg text-slate-700">
             {skills.length === 0 ? <li>No skills listed.</li> : null}
             {skills.map((skill) => (
               <li key={skill}>✔ {skill}</li>
@@ -207,15 +207,15 @@ function TeamDetailsPage() {
         </div>
 
         <div className="mt-6">
-          <h3 className="text-2xl font-bold text-[#7c3f16]">Description:</h3>
-          <p className="mt-2 rounded-2xl border border-[#ebd6c8] bg-[#fff7f0] p-4 text-lg text-[#7c4c2b]">
+          <h3 className="text-2xl font-bold text-slate-900">Description:</h3>
+          <p className="mt-2 rounded-2xl border border-[#dbe5f5] bg-[#f8fbff] p-4 text-lg text-slate-700">
             {meta.cleanDescription || "No description provided."}
           </p>
         </div>
 
         <div className="mt-6">
-          <h3 className="text-2xl font-bold text-[#7c3f16]">Current Members:</h3>
-          <ul className="mt-2 space-y-1 text-lg text-[#83522f]">
+          <h3 className="text-2xl font-bold text-slate-900">Current Members:</h3>
+          <ul className="mt-2 space-y-1 text-lg text-slate-700">
             <li>👑 {team.createdByName} (Leader)</li>
             {currentMembers
               .filter((member) => member.userName !== team.createdByName)
@@ -226,11 +226,11 @@ function TeamDetailsPage() {
         </div>
 
         {isLeaderView ? (
-          <div className="mt-7 rounded-2xl border border-[#ebd6c8] bg-[#fff7f0] p-4">
+          <div className="mt-7 rounded-2xl border border-[#dbe5f5] bg-[#f8fbff] p-4">
             <div className="mb-3 flex flex-wrap gap-2">
               <button
                 onClick={() => navigate(`/teams/${id}/edit`)}
-                className="rounded-lg border border-[#d0aa8f] bg-white px-3 py-2 text-sm font-semibold text-[#7e461f]"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Edit Team
               </button>
@@ -242,30 +242,30 @@ function TeamDetailsPage() {
               </button>
             </div>
 
-            <h3 className="text-2xl font-bold text-[#7c3f16]">
+            <h3 className="text-2xl font-bold text-slate-900">
               Join Requests ({pendingMembers.length})
             </h3>
 
             <div className="mt-3 space-y-3">
               {pendingMembers.length === 0 ? (
-                <p className="text-base text-[#8d5e3f]">No pending requests.</p>
+                <p className="text-base text-slate-600">No pending requests.</p>
               ) : (
                 pendingMembers.map((member) => (
-                  <article key={member.id} className="rounded-xl border border-[#e5c8b4] bg-white p-4">
-                    <p className="text-lg font-semibold text-[#7f451e]">👤 {member.userName}</p>
-                    <p className="text-base text-[#8d5e3f]">Message: {member.roleInTeam}</p>
+                  <article key={member.id} className="rounded-xl border border-[#dbe5f5] bg-white p-4">
+                    <p className="text-lg font-semibold text-slate-800">👤 {member.userName}</p>
+                    <p className="text-base text-slate-600">Message: {member.roleInTeam}</p>
                     <div className="mt-3 flex gap-2">
                       <button
                         onClick={() => handleRequestAction(member.id, "approve")}
                         disabled={updatingMemberId === member.id}
-                        className="rounded-lg bg-[#ef8f31] px-3 py-2 text-sm font-semibold text-white disabled:opacity-70"
+                        className="rounded-lg bg-[#2563eb] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-70"
                       >
                         Approve
                       </button>
                       <button
                         onClick={() => handleRequestAction(member.id, "reject")}
                         disabled={updatingMemberId === member.id}
-                        className="rounded-lg border border-[#d0aa8f] px-3 py-2 text-sm font-semibold text-[#7e461f] disabled:opacity-70"
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
                       >
                         Reject
                       </button>
@@ -296,7 +296,7 @@ function TeamDetailsPage() {
             ) : (
               <button
                 onClick={() => setJoinModalOpen(true)}
-                className="rounded-xl bg-[#ef8f31] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21]"
+                className="rounded-xl bg-[#2563eb] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#1d4ed8]"
               >
                 Request to Join
               </button>
@@ -304,34 +304,34 @@ function TeamDetailsPage() {
           </div>
         ) : null}
 
-        {joinMessage.success ? <p className="mt-3 text-base font-semibold text-amber-700">{joinMessage.success}</p> : null}
+        {joinMessage.success ? <p className="mt-3 text-base font-semibold text-blue-700">{joinMessage.success}</p> : null}
         {joinMessage.error ? <p className="mt-3 text-base text-rose-700">{joinMessage.error}</p> : null}
       </article>
 
       {joinModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="w-full max-w-xl rounded-3xl border border-[#ebc4a9] bg-[#fffdfb] p-6">
-            <h3 className="text-2xl font-bold text-[#7c3f16]">Message to Leader</h3>
+          <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6">
+            <h3 className="text-2xl font-bold text-slate-900">Message to Leader</h3>
             <form className="mt-3 space-y-3" onSubmit={handleJoinRequest}>
               <textarea
                 name="message"
                 value={joinForm.message}
                 onChange={handleJoinChange}
                 rows={4}
-                className="w-full rounded-xl border border-[#efcfbb] px-4 py-3 outline-none focus:border-[#eb8f3a]"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
               />
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setJoinModalOpen(false)}
-                  className="rounded-xl border border-[#d7b69e] px-4 py-2 text-sm font-semibold text-[#7e461f]"
+                  className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={joining}
-                  className="rounded-xl bg-[#ef8f31] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+                  className="rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-70"
                 >
                   {joining ? "Sending..." : "Send Request"}
                 </button>
