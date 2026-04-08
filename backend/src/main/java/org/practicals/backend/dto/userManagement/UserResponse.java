@@ -15,4 +15,6 @@ public class UserResponse {
     private String studentId;
     private String phoneNumber;
     private Role role;
+    private String profilePicturePath;
+    private String token;
 }
