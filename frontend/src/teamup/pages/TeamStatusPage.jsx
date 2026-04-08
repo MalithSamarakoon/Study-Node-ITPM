@@ -23,6 +23,7 @@ function TeamStatusPage() {
             teamId: team.id,
             teamTitle: team.title,
             teamStatus: team.status,
+            ownerName: team.createdByName,
             members: members.filter((member) => member.status === "APPROVED"),
           };
         }),
@@ -84,18 +85,25 @@ function TeamStatusPage() {
                 </div>
 
                 <div className="mt-4 space-y-2">
+                  <div className="rounded-xl border border-[#ebd2c0] bg-[#fff8f3] px-3 py-2">
+                    <p className="text-sm font-semibold text-[#7e461f]">{team.ownerName || "Team Owner"}</p>
+                    <p className="text-xs text-[#8f5f41]">Role: Owner</p>
+                  </div>
+
                   {team.members.length === 0 ? (
                     <p className="text-sm text-[#8f5f41]">No approved members yet.</p>
                   ) : (
-                    team.members.map((member) => (
+                    team.members
+                      .filter((member) => member.userName !== team.ownerName)
+                      .map((member) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between rounded-xl border border-[#ebd2c0] bg-[#fff8f3] px-3 py-2"
+                        className="rounded-xl border border-[#ebd2c0] bg-[#fff8f3] px-3 py-2"
                       >
                         <p className="text-sm font-semibold text-[#7e461f]">{member.userName}</p>
-                        <p className="text-xs text-[#8f5f41]">Role: {member.roleInTeam}</p>
+                        <p className="text-xs text-[#8f5f41]">Note: {member.roleInTeam}</p>
                       </div>
-                    ))
+                      ))
                   )}
                 </div>
 

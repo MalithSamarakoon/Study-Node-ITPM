@@ -45,6 +45,19 @@ function TeamListPage({ onlyMine = false }) {
   const [isMockMode, setIsMockMode] = useState(false);
   const [ownedTeamIds, setOwnedTeamIds] = useState(new Set());
 
+  const markPendingFromJoinedTeams = useCallback(async () => {
+    try {
+      const joinedTeams = await getJoinedTeams(currentUserId);
+      const pendingLookup = joinedTeams.reduce((acc, team) => {
+        acc[team.id] = true;
+        return acc;
+      }, {});
+      setRequestPendingIds((prev) => ({ ...prev, ...pendingLookup }));
+    } catch {
+      // Best-effort enhancement: keep local pending state when joined teams cannot be loaded.
+    }
+  }, [currentUserId]);
+
   const loadTeams = useCallback(async (skill) => {
     setLoading(true);
     setError("");
@@ -90,6 +103,12 @@ function TeamListPage({ onlyMine = false }) {
   useEffect(() => {
     loadTeams("");
   }, [loadTeams]);
+
+  useEffect(() => {
+    if (!onlyMine) {
+      markPendingFromJoinedTeams();
+    }
+  }, [markPendingFromJoinedTeams, onlyMine]);
 
   const list = useMemo(() => {
     const sorted = [...teams].sort((a, b) => Number(b.id) - Number(a.id));
@@ -322,13 +341,22 @@ function TeamListPage({ onlyMine = false }) {
                 View Details
               </Link>
               {!isOwner ? (
-                <button
-                  onClick={() => openJoinModal(team)}
-                  disabled={joiningTeamId === team.id}
-                  className="rounded-xl bg-[#ef8f31] px-4 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {joiningTeamId === team.id ? "Sending..." : "Request to Join"}
-                </button>
+                requestPendingIds[team.id] ? (
+                  <button
+                    disabled
+                    className="rounded-xl bg-amber-100 px-4 py-2.5 text-base font-semibold text-amber-800 disabled:cursor-not-allowed"
+                  >
+                    Requested
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => openJoinModal(team)}
+                    disabled={joiningTeamId === team.id}
+                    className="rounded-xl bg-[#ef8f31] px-4 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {joiningTeamId === team.id ? "Sending..." : "Request to Join"}
+                  </button>
+                )
               ) : null}
               {onlyMine && isOwner ? (
                 <>

@@ -178,6 +178,9 @@ function TeamDetailsPage() {
   const currentMembers = members.filter((member) => member.status === "APPROVED");
   const pendingMembers = members.filter((member) => member.status === "PENDING");
   const uiStatus = formatTeamStatus(team.status, team.memberCount, meta.maxMembers);
+  const currentUserMembership = members.find((member) => String(member.userId) === currentUserId);
+  const hasRequested = currentUserMembership?.status === "PENDING";
+  const isAlreadyMember = currentUserMembership?.status === "APPROVED";
 
   return (
     <section className="space-y-5 text-[#6a3a1a]">
@@ -276,12 +279,28 @@ function TeamDetailsPage() {
 
         {!isLeaderView ? (
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setJoinModalOpen(true)}
-              className="rounded-xl bg-[#ef8f31] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21]"
-            >
-              Request to Join
-            </button>
+            {hasRequested ? (
+              <button
+                disabled
+                className="rounded-xl bg-amber-100 px-5 py-2.5 text-base font-semibold text-amber-800 disabled:cursor-not-allowed"
+              >
+                Requested
+              </button>
+            ) : isAlreadyMember ? (
+              <button
+                disabled
+                className="rounded-xl bg-emerald-100 px-5 py-2.5 text-base font-semibold text-emerald-800 disabled:cursor-not-allowed"
+              >
+                Joined
+              </button>
+            ) : (
+              <button
+                onClick={() => setJoinModalOpen(true)}
+                className="rounded-xl bg-[#ef8f31] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#df7f21]"
+              >
+                Request to Join
+              </button>
+            )}
           </div>
         ) : null}
 
