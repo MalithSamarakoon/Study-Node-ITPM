@@ -1,9 +1,17 @@
 package org.practicals.backend;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+    "org.practicals.backend",
+    "com.studynode.backend.teamup",
+    "com.studynode.backend.common.web"
+})
+@AutoConfigurationPackage(basePackages = {"org.practicals.backend", "com.studynode.backend.teamup"})
+@EnableJpaRepositories(basePackages = {"org.practicals.backend", "com.studynode.backend.teamup"})
 public class BackendApplication {
 
     public static void main(String[] args) {
