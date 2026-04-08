@@ -18,6 +18,8 @@ import AdminResourceApprovalPage from "./pages/AdminResourceApprovalPage.jsx";
 import { AdminRoute, StudentRoute } from "./components/ProtectedRoute.jsx";
 import QAPage from "./pages/QAPage.jsx";
 import QuestionDetailPage from "./pages/QuestionDetailPage.jsx";
+import AccountPage from "./pages/AccountPage.jsx";
+import ProfileEditPage from "./pages/ProfileEditPage.jsx";
 
 const HomePage = () => (
     <>
@@ -45,6 +47,10 @@ function App() {
                     <Route path="/blogs" element={<BlogPage />} />
                     <Route path="/blogs/create" element={<BlogEditorPage />} />
                     <Route path="/blogs/:id" element={<BlogDetailPage />} />
+
+                    {/* Account routes */}
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/account/edit" element={<ProfileEditPage />} />
 
                     {/* Public resource browsing (any visitor) */}
                     <Route path="/resources/modules" element={<ModulesPage />} />
