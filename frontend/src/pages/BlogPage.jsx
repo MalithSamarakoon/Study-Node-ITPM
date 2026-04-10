@@ -26,6 +26,7 @@ const BlogPage = () => {
                         {dummyBlogs.map((blog) => (
                             <BlogCard
                                 key={blog.id}
+                                id={blog.id}
                                 writer={blog.writer}
                                 topic={blog.topic}
                                 tags={blog.tags}

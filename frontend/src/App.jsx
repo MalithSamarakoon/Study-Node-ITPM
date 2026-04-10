@@ -1,4 +1,4 @@
-import {Routes, Route, Navigate, useLocation} from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero.jsx";
 import FeatureSlider from "./components/FeatureSlider.jsx";
@@ -14,18 +14,32 @@ import ModuleQuizListPage from "./pages/ModuleQuizListPage.jsx";
 import QuizAttemptPage from "./pages/QuizAttemptPage.jsx";
 import QuizResultPage from "./pages/QuizResultPage.jsx";
 import QuizHistoryPage from "./pages/QuizHistoryPage.jsx";
+import { ToastContainer } from 'react-toastify';
+import BlogEditorPage from "./pages/BlogEditorPage.jsx";
+import BlogDetailPage from "./pages/BlogDetailPage.jsx";
+import ModulesPage from "./pages/ModulesPage.jsx";
+import UploadResourcePage from "./pages/UploadResourcePage.jsx";
+import MyUploadsPage from "./pages/MyUploadsPage.jsx";
+import AdminModulesPage from "./pages/AdminModulesPage.jsx";
+import AdminResourceApprovalPage from "./pages/AdminResourceApprovalPage.jsx";
+import { AdminRoute, StudentRoute } from "./components/ProtectedRoute.jsx";
+import QAPage from "./pages/QAPage.jsx";
+import QuestionDetailPage from "./pages/QuestionDetailPage.jsx";
+import AccountPage from "./pages/AccountPage.jsx";
+import ProfileEditPage from "./pages/ProfileEditPage.jsx";
 
 const HomePage = () => (
     <>
-        <Hero/>
-        <FeatureSlider/>
-        <Feedback/>
+        <Hero />
+        <FeatureSlider />
+        <Feedback />
     </>
-)
+);
 
 function App() {
     const location = useLocation();
 
+    // Only hide the main Navbar/Footer on auth pages
     const hideLayout = location.pathname === '/registration' || location.pathname === '/login';
 
     return (
@@ -33,26 +47,93 @@ function App() {
             {!hideLayout && <Navbar />}
             <main className="flex-grow">
                 <Routes>
-                    <Route path="/" element={<HomePage/>}/>
-                    <Route path="/registration" element={<RegistrationPage/>}/>
-                    <Route path="/login" element={<LoginPage/>}/>
-                    <Route path="/blogs" element={<BlogPage/>}/>
-                    <Route path="/quiz" element={<QuizFeedLayout/>}>
-                        <Route index element={<Navigate to="modules" replace/>}/>
-                        <Route path="modules" element={<ModuleListPage/>}/>
-                        <Route path="available" element={<AvailableQuizzesPage/>}/>
-                        <Route path="attempts" element={<QuizHistoryPage/>}/>
-                        <Route path="results" element={<QuizHistoryPage/>}/>
-                        <Route path="history" element={<QuizHistoryPage/>}/>
-                        <Route path="modules/:moduleId/quizzes" element={<ModuleQuizListPage/>}/>
-                        <Route path="modules/:moduleId/quizzes/:quizId/attempt" element={<QuizAttemptPage/>}/>
-                        <Route path="modules/:moduleId/results/:attemptId" element={<QuizResultPage/>}/>
+                    {/* Public routes */}
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/registration" element={<RegistrationPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/blogs" element={<BlogPage />} />
+                    <Route path="/blogs/create" element={<BlogEditorPage />} />
+                    <Route path="/blogs/:id" element={<BlogDetailPage />} />
+
+                    {/* Account routes */}
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/account/edit" element={<ProfileEditPage />} />
+
+                    {/* Public resource browsing (any visitor) */}
+                    <Route path="/resources/modules" element={<ModulesPage />} />
+
+                    {/* Student-only: upload resources */}
+                    <Route
+                        path="/resources/upload"
+                        element={
+                            <StudentRoute>
+                                <UploadResourcePage />
+                            </StudentRoute>
+                        }
+                    />
+                    <Route
+                        path="/resources/my-uploads"
+                        element={
+                            <StudentRoute>
+                                <MyUploadsPage />
+                            </StudentRoute>
+                        }
+                    />
+
+                    {/* Q&A Section (Student-only) */}
+                    <Route
+                        path="/qa"
+                        element={
+                            <StudentRoute>
+                                <QAPage />
+                            </StudentRoute>
+                        }
+                    />
+                    <Route
+                        path="/qa/question/:id"
+                        element={
+                            <StudentRoute>
+                                <QuestionDetailPage />
+                            </StudentRoute>
+                        }
+                    />
+
+                    {/* Admin-only routes */}
+                    <Route
+                        path="/admin/modules"
+                        element={
+                            <AdminRoute>
+                                <AdminModulesPage />
+                            </AdminRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/resources"
+                        element={
+                            <AdminRoute>
+                                <AdminResourceApprovalPage />
+                            </AdminRoute>
+                        }
+                    />
+
+                    {/* Quiz routes */}
+                    <Route path="/quiz" element={<QuizFeedLayout />}>
+                        <Route index element={<Navigate to="modules" replace />} />
+                        <Route path="modules" element={<ModuleListPage />} />
+                        <Route path="available" element={<AvailableQuizzesPage />} />
+                        <Route path="attempts" element={<QuizHistoryPage />} />
+                        <Route path="results" element={<QuizHistoryPage />} />
+                        <Route path="history" element={<QuizHistoryPage />} />
+                        <Route path="modules/:moduleId/quizzes" element={<ModuleQuizListPage />} />
+                        <Route path="modules/:moduleId/quizzes/:quizId/attempt" element={<QuizAttemptPage />} />
+                        <Route path="modules/:moduleId/results/:attemptId" element={<QuizResultPage />} />
                     </Route>
                 </Routes>
             </main>
             {!hideLayout && <Footer />}
+            <ToastContainer />
         </div>
     );
-};
+}
 
 export default App;
