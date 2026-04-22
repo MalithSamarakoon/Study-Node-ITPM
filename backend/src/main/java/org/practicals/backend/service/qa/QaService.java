@@ -1,10 +1,41 @@
 package org.practicals.backend.service.qa;
 
-import org.practicals.backend.dto.qa.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.practicals.backend.dto.qa.AnswerCreateRequest;
+import org.practicals.backend.dto.qa.AnswerResponse;
+import org.practicals.backend.dto.qa.CommentCreateRequest;
+import org.practicals.backend.dto.qa.CommentResponse;
+import org.practicals.backend.dto.qa.PollCreateRequest;
+import org.practicals.backend.dto.qa.PollOptionResponse;
+import org.practicals.backend.dto.qa.PollVoteRequest;
+import org.practicals.backend.dto.qa.QuestionCreateRequest;
+import org.practicals.backend.dto.qa.QuestionResponse;
+import org.practicals.backend.dto.qa.QuestionUpdateRequest;
+import org.practicals.backend.dto.qa.VoteRequest;
 import org.practicals.backend.model.notificationManagement.NotificationType;
-import org.practicals.backend.model.qa.*;
+import org.practicals.backend.model.qa.Answer;
+import org.practicals.backend.model.qa.Comment;
+import org.practicals.backend.model.qa.PollOption;
+import org.practicals.backend.model.qa.PollVote;
+import org.practicals.backend.model.qa.Question;
+import org.practicals.backend.model.qa.QuestionStatus;
+import org.practicals.backend.model.qa.QuestionType;
+import org.practicals.backend.model.qa.Tag;
+import org.practicals.backend.model.qa.Vote;
+import org.practicals.backend.model.qa.VoteType;
 import org.practicals.backend.model.userManagement.User;
-import org.practicals.backend.repository.qa.*;
+import org.practicals.backend.repository.qa.AnswerRepository;
+import org.practicals.backend.repository.qa.CommentRepository;
+import org.practicals.backend.repository.qa.PollOptionRepository;
+import org.practicals.backend.repository.qa.PollVoteRepository;
+import org.practicals.backend.repository.qa.QaQuestionRepository;
+import org.practicals.backend.repository.qa.TagRepository;
+import org.practicals.backend.repository.qa.VoteRepository;
 import org.practicals.backend.repository.userManagement.UserRepository;
 import org.practicals.backend.security.services.UserDetailsImpl;
 import org.practicals.backend.service.notificationManagement.NotificationService;
@@ -16,12 +47,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Locale;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class QaService {

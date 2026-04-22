@@ -1,7 +1,8 @@
 package org.practicals.backend.dto.userManagement;
 
-import lombok.Data;
 import java.util.List;
+
+import lombok.Data;
 
 /**
  * Returns the JWT and user details back to the student.

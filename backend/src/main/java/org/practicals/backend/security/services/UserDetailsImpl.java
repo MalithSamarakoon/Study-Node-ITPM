@@ -1,15 +1,16 @@
 package org.practicals.backend.security.services;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
+import java.util.Collection;
+import java.util.List;
+
 import org.practicals.backend.model.userManagement.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import lombok.Getter;
 
 @Getter
 public class UserDetailsImpl implements UserDetails {
