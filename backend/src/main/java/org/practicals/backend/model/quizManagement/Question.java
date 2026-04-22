@@ -14,8 +14,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Table(name = "questions")
+@Entity(name = "QuizQuestion")
+@Table(name = "quiz_questions")
 @Getter
 @Setter
 @NoArgsConstructor

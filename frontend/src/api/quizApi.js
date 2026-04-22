@@ -9,9 +9,18 @@ const quizClient = axios.create({
 export const getStudentId = () => {
     try {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
-        return user.studentId || "IT20260001";
+        return user.studentId || null;
     } catch {
-        return "IT20260001";
+        return null;
+    }
+};
+
+export const getCurrentUsername = () => {
+    try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        return user.username || "admin";
+    } catch {
+        return "admin";
     }
 };
 
@@ -20,10 +29,34 @@ export const fetchModules = async () => {
     return data;
 };
 
+export const createModule = async ({ title, description }) => {
+    const payload = {
+        title,
+        description: description || "",
+        createdBy: getCurrentUsername()
+    };
+    const { data } = await quizClient.post("/modules", payload);
+    return data;
+};
+
+export const updateModule = async (moduleId, { title, description }) => {
+    const payload = {
+        title,
+        description: description || "",
+        createdBy: getCurrentUsername()
+    };
+    const { data } = await quizClient.put(`/modules/${moduleId}`, payload);
+    return data;
+};
+
+export const deleteModule = async (moduleId) => {
+    await quizClient.delete(`/modules/${moduleId}`);
+};
+
 export const fetchModuleQuizzes = async (moduleId) => {
     const studentId = getStudentId();
     const { data } = await quizClient.get(`/modules/${moduleId}/quizzes`, {
-        params: { studentId }
+        params: studentId ? { studentId } : {}
     });
     return data;
 };
@@ -33,8 +66,33 @@ export const fetchQuizById = async (quizId) => {
     return data;
 };
 
+export const createQuiz = async (moduleId, payload) => {
+    const request = {
+        ...payload,
+        createdBy: payload.createdBy || getCurrentUsername()
+    };
+    const { data } = await quizClient.post(`/modules/${moduleId}/quizzes`, request);
+    return data;
+};
+
+export const updateQuiz = async (quizId, payload) => {
+    const request = {
+        ...payload,
+        createdBy: payload.createdBy || getCurrentUsername()
+    };
+    const { data } = await quizClient.put(`/quizzes/${quizId}`, request);
+    return data;
+};
+
+export const deleteQuiz = async (quizId) => {
+    await quizClient.delete(`/quizzes/${quizId}`);
+};
+
 export const submitQuizAttempt = async (quizId, answers) => {
     const studentId = getStudentId();
+    if (!studentId) {
+        throw new Error("Missing student profile. Please sign out and sign in again.");
+    }
     const payload = {
         studentId,
         answers
@@ -50,6 +108,9 @@ export const fetchAttemptResult = async (attemptId) => {
 
 export const fetchAttemptHistory = async () => {
     const studentId = getStudentId();
+    if (!studentId) {
+        return [];
+    }
     const { data } = await quizClient.get(`/students/${studentId}/attempts`);
     return data;
 };

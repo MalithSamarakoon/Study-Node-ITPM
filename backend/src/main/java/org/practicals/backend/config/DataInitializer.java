@@ -26,6 +26,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -64,8 +65,11 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     @Override
+    @Transactional
     public void run(String... args) {
         normalizeUsersRoleColumn();
+        normalizeQuizForeignKeys();
+        removeQuizDummyData();
 
         if (!userRepository.existsByUsername("admin")) {
             User admin = new User();
@@ -82,12 +86,95 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        seedQuizData();
+        logger.info("Quiz dummy-data seeding is disabled.");
     }
 
     private void normalizeUsersRoleColumn() {
         applySchemaPatch("ALTER TABLE users MODIFY COLUMN role VARCHAR(32)");
         applySchemaPatch("ALTER TABLE users MODIFY COLUMN name VARCHAR(255) NULL");
+    }
+
+    private void normalizeQuizForeignKeys() {
+        normalizeForeignKey(
+            "quizzes",
+            "module_id",
+            "modules",
+            "quiz_modules",
+            "id",
+            "fk_quizzes_quiz_modules"
+        );
+
+        normalizeForeignKey(
+            "question_options",
+            "question_id",
+            "questions",
+            "quiz_questions",
+            "id",
+            "fk_question_options_quiz_questions"
+        );
+
+        normalizeForeignKey(
+            "student_answers",
+            "question_id",
+            "questions",
+            "quiz_questions",
+            "id",
+            "fk_student_answers_quiz_questions"
+        );
+        }
+
+        private void normalizeForeignKey(
+            String tableName,
+            String columnName,
+            String legacyReferencedTable,
+            String targetReferencedTable,
+            String targetReferencedColumn,
+            String newConstraintName
+        ) {
+        List<String> legacyConstraints = jdbcTemplate.queryForList(
+            """
+            SELECT CONSTRAINT_NAME
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND REFERENCED_TABLE_NAME = ?
+            """,
+            String.class,
+            tableName,
+            columnName,
+            legacyReferencedTable
+        );
+
+        for (String constraintName : legacyConstraints) {
+            applySchemaPatch("ALTER TABLE " + tableName + " DROP FOREIGN KEY " + constraintName);
+        }
+
+        Integer correctFkCount = jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(*)
+            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = ?
+              AND COLUMN_NAME = ?
+              AND REFERENCED_TABLE_NAME = ?
+              AND REFERENCED_COLUMN_NAME = ?
+            """,
+            Integer.class,
+            tableName,
+            columnName,
+            targetReferencedTable,
+            targetReferencedColumn
+        );
+
+        if (correctFkCount == null || correctFkCount == 0) {
+            applySchemaPatch(
+                "ALTER TABLE " + tableName
+                    + " ADD CONSTRAINT " + newConstraintName
+                    + " FOREIGN KEY (" + columnName + ") REFERENCES " + targetReferencedTable
+                    + " (" + targetReferencedColumn + ")"
+            );
+        }
     }
 
     private void applySchemaPatch(String sql) {
@@ -96,6 +183,60 @@ public class DataInitializer implements CommandLineRunner {
         } catch (DataAccessException ex) {
             // Ignore if users table/column does not exist yet or is already compatible.
             logger.debug("Schema patch skipped for '{}': {}", sql, ex.getMessage());
+        }
+    }
+
+    private void removeQuizDummyData() {
+        applyDataPatch("""
+                DELETE sa
+                FROM student_answers sa
+                INNER JOIN quiz_attempts qa ON sa.attempt_id = qa.id
+                INNER JOIN quizzes q ON qa.quiz_id = q.id
+                WHERE q.created_by LIKE 'lecturer.%'
+                """);
+
+        applyDataPatch("""
+                DELETE qa
+                FROM quiz_attempts qa
+                INNER JOIN quizzes q ON qa.quiz_id = q.id
+                WHERE q.created_by LIKE 'lecturer.%'
+                """);
+
+        applyDataPatch("""
+                DELETE qo
+                FROM question_options qo
+                INNER JOIN quiz_questions qq ON qo.question_id = qq.id
+                INNER JOIN quizzes q ON qq.quiz_id = q.id
+                WHERE q.created_by LIKE 'lecturer.%'
+                """);
+
+        applyDataPatch("""
+                DELETE qq
+                FROM quiz_questions qq
+                INNER JOIN quizzes q ON qq.quiz_id = q.id
+                WHERE q.created_by LIKE 'lecturer.%'
+                """);
+
+        applyDataPatch("""
+                DELETE FROM quizzes
+                WHERE created_by LIKE 'lecturer.%'
+                   OR title LIKE '% - Mid Quiz'
+                   OR title LIKE '% - Practice Quiz'
+                """);
+
+        applyDataPatch("""
+                DELETE FROM quiz_modules
+                WHERE created_by LIKE 'lecturer.%'
+                   OR title IN ('PAF', 'ESD', 'NDM', 'DS', 'ITPM')
+                """);
+    }
+
+    private void applyDataPatch(String sql) {
+        try {
+            jdbcTemplate.execute(sql);
+        } catch (DataAccessException ex) {
+            // Ignore when quiz tables are not present yet or query does not apply to current schema.
+            logger.debug("Data patch skipped for '{}': {}", sql, ex.getMessage());
         }
     }
 

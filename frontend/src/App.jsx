@@ -27,6 +27,7 @@ import QAPage from "./pages/QAPage.jsx";
 import QuestionDetailPage from "./pages/QuestionDetailPage.jsx";
 import AccountPage from "./pages/AccountPage.jsx";
 import ProfileEditPage from "./pages/ProfileEditPage.jsx";
+import AdminQuizManagementPage from "./pages/AdminQuizManagementPage.jsx";
 
 const HomePage = () => (
     <>
@@ -119,6 +120,30 @@ function App() {
                     {/* Quiz routes */}
                     <Route path="/quiz" element={<QuizFeedLayout />}>
                         <Route index element={<Navigate to="modules" replace />} />
+                        <Route
+                            path="admin"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="dashboard" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/modules"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="modules" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/quizzes"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="quizzes" />
+                                </AdminRoute>
+                            }
+                        />
                         <Route path="modules" element={<ModuleListPage />} />
                         <Route path="available" element={<AvailableQuizzesPage />} />
                         <Route path="attempts" element={<QuizHistoryPage />} />

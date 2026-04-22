@@ -123,8 +123,8 @@ const Navbar = () => {
 
                     {/* Quiz Link: Only visible to Admins */}
                     {admin && (
-                        <li className={navLinkClass('/quiz')}>
-                            <Link to="/quiz">Quiz</Link>
+                        <li className={navLinkClass('/quiz/admin')}>
+                            <Link to="/quiz/admin">Quiz</Link>
                         </li>
                     )}
                     <li className={navLinkClass('/resources/modules')}>

@@ -70,6 +70,7 @@ public class AuthController {
                 userDetails.getId(),
                 userDetails.getUsername(),
                 userDetails.getEmail(),
+                userDetails.getStudentId(),
                 roles));
     }
 
@@ -96,6 +97,7 @@ public class AuthController {
                 userDetails.getId(),
                 userDetails.getUsername(),
                 userDetails.getEmail(),
+                userDetails.getStudentId(),
                 roles));
     }
 }

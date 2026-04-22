@@ -29,7 +29,7 @@ public class QaService {
     private static final long MAX_QUESTION_IMAGE_SIZE_BYTES = 5L * 1024 * 1024;
     private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
 
-    private final QuestionRepository questionRepository;
+    private final QaQuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
     private final TagRepository tagRepository;
     private final VoteRepository voteRepository;
@@ -41,7 +41,7 @@ public class QaService {
     private final FileStorageService fileStorageService;
 
     public QaService(
-            QuestionRepository questionRepository,
+            QaQuestionRepository questionRepository,
             AnswerRepository answerRepository,
             TagRepository tagRepository,
             VoteRepository voteRepository,
