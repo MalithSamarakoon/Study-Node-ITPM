@@ -16,6 +16,16 @@ import MyUploadsPage from "./pages/MyUploadsPage.jsx";
 import AdminModulesPage from "./pages/AdminModulesPage.jsx";
 import AdminResourceApprovalPage from "./pages/AdminResourceApprovalPage.jsx";
 import { AdminRoute, StudentRoute } from "./components/ProtectedRoute.jsx";
+import QuizFeedLayout from "./pages/QuizFeedLayout.jsx";
+import ModuleListPage from "./pages/ModuleListPage.jsx";
+import AvailableQuizzesPage from "./pages/AvailableQuizzesPage.jsx";
+import ModuleQuizListPage from "./pages/ModuleQuizListPage.jsx";
+import QuizAttemptPage from "./pages/QuizAttemptPage.jsx";
+import QuizResultPage from "./pages/QuizResultPage.jsx";
+import QuizHistoryPage from "./pages/QuizHistoryPage.jsx";
+import QuizLeaderboardPage from "./pages/QuizLeaderboardPage.jsx";
+import AdminQuizManagementPage from "./pages/AdminQuizManagementPage.jsx";
+import AdminQuizEngagementPage from "./pages/AdminQuizEngagementPage.jsx";
 import QAPage from "./pages/QAPage.jsx";
 import QuestionDetailPage from "./pages/QuestionDetailPage.jsx";
 import TeamupLayout from "./teamup/components/TeamupLayout.jsx";
@@ -123,6 +133,50 @@ function App() {
                             </AdminRoute>
                         }
                     />
+
+                    {/* Quiz routes */}
+                    <Route path="/quiz" element={<QuizFeedLayout />}>
+                        <Route index element={<Navigate to="modules" replace />} />
+                        <Route path="modules" element={<ModuleListPage />} />
+                        <Route path="available" element={<AvailableQuizzesPage />} />
+                        <Route path="modules/:moduleId/quizzes" element={<ModuleQuizListPage />} />
+                        <Route path="modules/:moduleId/quizzes/:quizId/attempt" element={<QuizAttemptPage />} />
+                        <Route path="modules/:moduleId/results/:attemptId" element={<QuizResultPage />} />
+                        <Route path="history" element={<QuizHistoryPage />} />
+                        <Route path="leaderboard" element={<QuizLeaderboardPage />} />
+                        <Route
+                            path="admin"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="dashboard" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/modules"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="modules" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/quizzes"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="quizzes" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/engagement"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizEngagementPage />
+                                </AdminRoute>
+                            }
+                        />
+                    </Route>
                 </Routes>
             </main>
             {!hideLayout && <Footer />}

@@ -9,7 +9,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamAdminPage() {
   const user = useCurrentUser();
-  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const currentUserId = user?.id != null ? String(user.id) : "";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -79,7 +79,7 @@ function TeamAdminPage() {
             pendingRequests.map((request) => (
               <article
                 key={request.id}
-                className="rounded-2xl border border-[#dbe5f5] bg-[#f8fbff] p-4"
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
               >
                 <p className="text-lg font-semibold text-slate-800"> {request.userName}</p>
                 <p className="text-sm text-slate-600">Team: {request.teamTitle}</p>
@@ -89,7 +89,7 @@ function TeamAdminPage() {
                   <button
                     onClick={() => handleMembershipAction(request.teamId, request.id, "approve")}
                     disabled={busyMemberId === request.id}
-                    className="rounded-lg bg-[#2563eb] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-70"
+                    className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-70"
                   >
                     Approve
                   </button>

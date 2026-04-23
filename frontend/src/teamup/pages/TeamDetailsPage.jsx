@@ -15,7 +15,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamDetailsPage() {
   const user = useCurrentUser();
-  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const currentUserId = user?.id != null ? String(user.id) : "";
   const navigate = useNavigate();
 
   const { id } = useParams();
@@ -208,7 +208,7 @@ function TeamDetailsPage() {
 
         <div className="mt-6">
           <h3 className="text-2xl font-bold text-slate-900">Description:</h3>
-          <p className="mt-2 rounded-2xl border border-[#dbe5f5] bg-[#f8fbff] p-4 text-lg text-slate-700">
+          <p className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-lg text-slate-700">
             {meta.cleanDescription || "No description provided."}
           </p>
         </div>
@@ -226,7 +226,7 @@ function TeamDetailsPage() {
         </div>
 
         {isLeaderView ? (
-          <div className="mt-7 rounded-2xl border border-[#dbe5f5] bg-[#f8fbff] p-4">
+          <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-3 flex flex-wrap gap-2">
               <button
                 onClick={() => navigate(`/teams/${id}/edit`)}
@@ -251,14 +251,14 @@ function TeamDetailsPage() {
                 <p className="text-base text-slate-600">No pending requests.</p>
               ) : (
                 pendingMembers.map((member) => (
-                  <article key={member.id} className="rounded-xl border border-[#dbe5f5] bg-white p-4">
+                  <article key={member.id} className="rounded-xl border border-slate-200 bg-white p-4">
                     <p className="text-lg font-semibold text-slate-800">👤 {member.userName}</p>
                     <p className="text-base text-slate-600">Message: {member.roleInTeam}</p>
                     <div className="mt-3 flex gap-2">
                       <button
                         onClick={() => handleRequestAction(member.id, "approve")}
                         disabled={updatingMemberId === member.id}
-                        className="rounded-lg bg-[#2563eb] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-70"
+                        className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-70"
                       >
                         Approve
                       </button>
@@ -296,7 +296,7 @@ function TeamDetailsPage() {
             ) : (
               <button
                 onClick={() => setJoinModalOpen(true)}
-                className="rounded-xl bg-[#2563eb] px-5 py-2.5 text-base font-semibold text-white hover:bg-[#1d4ed8]"
+                className="rounded-xl bg-violet-600 px-5 py-2.5 text-base font-semibold text-white hover:bg-violet-700"
               >
                 Request to Join
               </button>
@@ -304,7 +304,7 @@ function TeamDetailsPage() {
           </div>
         ) : null}
 
-        {joinMessage.success ? <p className="mt-3 text-base font-semibold text-blue-700">{joinMessage.success}</p> : null}
+        {joinMessage.success ? <p className="mt-3 text-base font-semibold text-violet-700">{joinMessage.success}</p> : null}
         {joinMessage.error ? <p className="mt-3 text-base text-rose-700">{joinMessage.error}</p> : null}
       </article>
 
@@ -331,7 +331,7 @@ function TeamDetailsPage() {
                 <button
                   type="submit"
                   disabled={joining}
-                  className="rounded-xl bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-70"
+                  className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-70"
                 >
                   {joining ? "Sending..." : "Send Request"}
                 </button>

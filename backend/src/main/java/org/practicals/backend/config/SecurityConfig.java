@@ -60,6 +60,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/quiz/**").permitAll()
                     .requestMatchers("/api/v1/teams/**").permitAll()
                     .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/api/public/**").permitAll()

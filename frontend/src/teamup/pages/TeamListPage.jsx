@@ -24,8 +24,12 @@ function normalizeSkillToken(value) {
 
 function TeamListPage({ onlyMine = false }) {
   const user = useCurrentUser();
-  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const currentUserId = user?.id != null ? String(user.id) : "";
   const navigate = useNavigate();
+  const mySkillsStorageKey = useMemo(
+    () => (currentUserId ? `${MY_SKILLS_STORAGE_KEY}:${currentUserId}` : MY_SKILLS_STORAGE_KEY),
+    [currentUserId]
+  );
 
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,14 +39,8 @@ function TeamListPage({ onlyMine = false }) {
   const [sortBy, setSortBy] = useState("LATEST");
   const [highMatchOnly, setHighMatchOnly] = useState(false);
   const [mySkillsInput, setMySkillsInput] = useState("");
-  const [mySkills, setMySkills] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(MY_SKILLS_STORAGE_KEY) || "[]");
-      return Array.isArray(saved) ? saved.filter((item) => typeof item === "string") : [];
-    } catch {
-      return [];
-    }
-  });
+  const [mySkills, setMySkills] = useState([]);
+  const [hasLoadedMySkills, setHasLoadedMySkills] = useState(false);
   const [joiningTeamId, setJoiningTeamId] = useState(null);
   const [requestPendingIds, setRequestPendingIds] = useState({});
   const [statusUpdatingTeamId, setStatusUpdatingTeamId] = useState(null);
@@ -128,8 +126,25 @@ function TeamListPage({ onlyMine = false }) {
   }, [markPendingFromJoinedTeams, onlyMine]);
 
   useEffect(() => {
-    localStorage.setItem(MY_SKILLS_STORAGE_KEY, JSON.stringify(mySkills));
-  }, [mySkills]);
+    try {
+      const saved = JSON.parse(localStorage.getItem(mySkillsStorageKey) || "[]");
+      const nextSkills = Array.isArray(saved)
+        ? saved.filter((item) => typeof item === "string")
+        : [];
+      setMySkills(nextSkills);
+    } catch {
+      setMySkills([]);
+    } finally {
+      setHasLoadedMySkills(true);
+    }
+  }, [mySkillsStorageKey]);
+
+  useEffect(() => {
+    if (!hasLoadedMySkills) {
+      return;
+    }
+    localStorage.setItem(mySkillsStorageKey, JSON.stringify(mySkills));
+  }, [hasLoadedMySkills, mySkills, mySkillsStorageKey]);
 
   const normalizedMySkills = useMemo(
     () => mySkills.map(normalizeSkillToken).filter(Boolean),
@@ -550,18 +565,18 @@ function TeamListPage({ onlyMine = false }) {
 
       {joinModal.open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="w-full max-w-xl rounded-3xl border border-[#ebc4a9] bg-[#fffdfb] p-6">
-            <h3 className="text-2xl font-bold text-[#7c3f16]">Request to Join</h3>
-            <p className="mt-1 text-base text-[#8c5d3e]">{joinModal.teamTitle}</p>
+          <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6">
+            <h3 className="text-2xl font-bold text-slate-900">Request to Join</h3>
+            <p className="mt-1 text-base text-slate-600">{joinModal.teamTitle}</p>
 
-            <label className="mt-4 block text-sm font-semibold text-[#764121]">Message to Leader</label>
+            <label className="mt-4 block text-sm font-semibold text-slate-700">Message to Leader</label>
             <textarea
               value={joinModal.message}
               onChange={(event) =>
                 setJoinModal((prev) => ({ ...prev, message: event.target.value, error: "" }))
               }
               rows={4}
-              className="mt-1 w-full rounded-xl border border-[#efcfbb] px-4 py-3 outline-none focus:border-[#eb8f3a]"
+              className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
             />
 
             {joinModal.error ? <p className="mt-2 text-sm text-rose-700">{joinModal.error}</p> : null}
@@ -569,7 +584,7 @@ function TeamListPage({ onlyMine = false }) {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 onClick={closeJoinModal}
-                className="rounded-xl border border-[#d7b69e] px-4 py-2 text-sm font-semibold text-[#7e461f]"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Cancel
               </button>
@@ -586,9 +601,9 @@ function TeamListPage({ onlyMine = false }) {
 
       {deleteModal.open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-          <div className="w-full max-w-xl rounded-3xl border border-rose-300 bg-[#fffdfb] p-6">
+          <div className="w-full max-w-xl rounded-3xl border border-rose-300 bg-white p-6">
             <h3 className="text-2xl font-bold text-rose-700">Delete Team</h3>
-            <p className="mt-2 text-base text-[#8c5d3e]">
+            <p className="mt-2 text-base text-slate-600">
               Are you sure you want to delete <span className="font-semibold">{deleteModal.teamTitle}</span>? This action cannot be undone.
             </p>
 
@@ -596,7 +611,7 @@ function TeamListPage({ onlyMine = false }) {
               <button
                 onClick={closeDeleteModal}
                 disabled={deleteModal.deleting}
-                className="rounded-xl border border-[#d7b69e] px-4 py-2 text-sm font-semibold text-[#7e461f] disabled:opacity-50"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 Cancel
               </button>

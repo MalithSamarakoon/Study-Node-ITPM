@@ -5,12 +5,19 @@ import { useCurrentUser } from "../hooks/useCurrentUser.js";
 
 function TeamStatusPage() {
   const user = useCurrentUser();
-  const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const currentUserId = user?.id != null ? String(user.id) : null;
   const [teamsWithMembers, setTeamsWithMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const loadOwnerTeamMembers = useCallback(async () => {
+    if (!currentUserId) {
+      setTeamsWithMembers([]);
+      setError("Unable to resolve your TeamUp account. Please log in again.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -60,7 +67,7 @@ function TeamStatusPage() {
       {teamsWithMembers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-base text-slate-600">
           You do not own any teams yet. Create one on the{" "}
-          <Link to="/teams/new" className="font-semibold text-[#1d4ed8] hover:underline">
+          <Link to="/teams/new" className="font-semibold text-violet-700 hover:underline">
             Create Team
           </Link>{" "}
           page.
@@ -79,13 +86,13 @@ function TeamStatusPage() {
                     <p className="mt-2 text-base text-slate-600">Status: {team.teamStatus}</p>
                   </div>
 
-                  <div className="rounded-full bg-[#eef4ff] px-4 py-2 text-sm font-semibold text-[#1e3a8a]">
+                  <div className="rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700">
                     Members: {team.members.length}
                   </div>
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <div className="rounded-xl border border-[#dbe5f5] bg-[#f8fbff] px-3 py-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                     <p className="text-sm font-semibold text-slate-800">{team.ownerName || "Team Owner"}</p>
                     <p className="text-xs text-slate-600">Role: Owner</p>
                   </div>
@@ -98,7 +105,7 @@ function TeamStatusPage() {
                       .map((member) => (
                       <div
                         key={member.id}
-                        className="rounded-xl border border-[#dbe5f5] bg-[#f8fbff] px-3 py-2"
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
                       >
                         <p className="text-sm font-semibold text-slate-800">{member.userName}</p>
                         <p className="text-xs text-slate-600">Note: {member.roleInTeam}</p>

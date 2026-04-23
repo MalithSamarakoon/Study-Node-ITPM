@@ -17,7 +17,7 @@ const initialForm = {
 function CreateTeamPage() {
   const navigate = useNavigate();
   const user = useCurrentUser();
-  const currentUserId = Number(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
+  const currentUserId = user?.id != null ? Number(user.id) : null;
 
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -144,6 +144,11 @@ function CreateTeamPage() {
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+      return;
+    }
+
+    if (currentUserId == null || Number.isNaN(currentUserId)) {
+      setServerMessage("Unable to resolve your TeamUp account. Please log in again.");
       return;
     }
 

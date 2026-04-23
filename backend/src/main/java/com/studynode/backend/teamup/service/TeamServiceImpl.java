@@ -308,14 +308,23 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private User resolveUserOrFallback(Long preferredUserId, String fallbackName) {
+        if (preferredUserId == null) {
+            throw new BadRequestException("User id is required");
+        }
+
         User existing = resolveExistingUser(preferredUserId);
         if (existing != null) {
             return existing;
         }
 
-        User firstStudent = userRepository.findFirstByRoleOrderByIdAsc(UserRole.STUDENT).orElse(null);
-        if (firstStudent != null) {
-            return firstStudent;
+        org.practicals.backend.model.userManagement.User appUser = appUserRepository.findById(preferredUserId).orElse(null);
+        if (appUser != null) {
+            User fromAppUser = new User();
+            fromAppUser.setName(appUser.getUsername());
+            fromAppUser.setEmail(appUser.getEmail());
+            fromAppUser.setPassword("mapped-user");
+            fromAppUser.setRole(UserRole.STUDENT);
+            return userRepository.save(fromAppUser);
         }
 
         User fallback = new User();
@@ -348,21 +357,9 @@ public class TeamServiceImpl implements TeamService {
             if (byRealEmail != null) {
                 return byRealEmail;
             }
-
-            User fromAppUser = new User();
-            fromAppUser.setName(appUser.getUsername());
-            fromAppUser.setEmail(appUser.getEmail());
-            fromAppUser.setPassword("mapped-user");
-            fromAppUser.setRole(UserRole.STUDENT);
-            return userRepository.save(fromAppUser);
         }
 
-        User created = new User();
-        created.setName("User " + preferredUserId);
-        created.setEmail(mappedEmail);
-        created.setPassword("mapped-user");
-        created.setRole(UserRole.STUDENT);
-        return userRepository.save(created);
+        return null;
     }
 
     private TeamResponse toTeamResponse(Team team) {

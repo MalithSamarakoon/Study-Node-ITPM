@@ -3,6 +3,7 @@ package org.practicals.backend;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
@@ -11,7 +12,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
     "com.studynode.backend.common.web"
 })
 @AutoConfigurationPackage(basePackages = {"org.practicals.backend", "com.studynode.backend.teamup"})
-@EnableJpaRepositories(basePackages = {"org.practicals.backend", "com.studynode.backend.teamup"})
+@EnableJpaRepositories(
+    basePackages = {"org.practicals.backend", "com.studynode.backend.teamup"},
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class
+)
 public class BackendApplication {
 
     public static void main(String[] args) {
