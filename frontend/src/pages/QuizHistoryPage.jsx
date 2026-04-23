@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { fetchAttemptHistory } from "../api/quizApi";
+
+const INITIAL_VISIBLE_ITEMS = 5;
 
 function QuizHistoryPage() {
     const [history, setHistory] = useState([]);
+    const [visibleItems, setVisibleItems] = useState(INITIAL_VISIBLE_ITEMS);
 
     useEffect(() => {
         const load = async () => {
@@ -41,6 +44,10 @@ function QuizHistoryPage() {
             improvement
         };
     }, [timeline]);
+
+    const visibleHistory = useMemo(() => history.slice(0, visibleItems), [history, visibleItems]);
+    const hasMoreHistory = history.length > visibleItems;
+    const canCollapseHistory = history.length > INITIAL_VISIBLE_ITEMS && visibleItems > INITIAL_VISIBLE_ITEMS;
 
     return (
         <div className="space-y-6">
@@ -96,7 +103,7 @@ function QuizHistoryPage() {
                 </section>
             )}
 
-            {history.map((item) => (
+            {visibleHistory.map((item) => (
                 <article key={item.attemptId} className="bg-white border border-violet-100 rounded-2xl p-5 shadow-sm">
                     <h2 className="text-lg font-semibold text-indigo-900">{item.quizTitle}</h2>
                     <p className="text-sm text-gray-700 mt-2">Score: {item.score} / {item.totalMarks}</p>
@@ -109,6 +116,24 @@ function QuizHistoryPage() {
                     </Link>
                 </article>
             ))}
+
+            {(hasMoreHistory || canCollapseHistory) && (
+                <div className="flex justify-center">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (hasMoreHistory) {
+                                setVisibleItems((prev) => prev + INITIAL_VISIBLE_ITEMS);
+                            } else {
+                                setVisibleItems(INITIAL_VISIBLE_ITEMS);
+                            }
+                        }}
+                        className="px-4 py-2 rounded-xl text-sm font-medium bg-violet-100 text-violet-800 hover:bg-violet-200"
+                    >
+                        {hasMoreHistory ? "View More" : "View Less"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

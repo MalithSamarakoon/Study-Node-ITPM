@@ -14,6 +14,7 @@ import ModuleQuizListPage from "./pages/ModuleQuizListPage.jsx";
 import QuizAttemptPage from "./pages/QuizAttemptPage.jsx";
 import QuizResultPage from "./pages/QuizResultPage.jsx";
 import QuizHistoryPage from "./pages/QuizHistoryPage.jsx";
+import QuizLeaderboardPage from "./pages/QuizLeaderboardPage.jsx";
 import BlogEditorPage from "./pages/BlogEditorPage.jsx";
 import BlogDetailPage from "./pages/BlogDetailPage.jsx";
 import ModulesPage from "./pages/ModulesPage.jsx";
@@ -155,6 +156,7 @@ function App() {
                         <Route path="modules" element={<ModuleListPage />} />
                         <Route path="available" element={<AvailableQuizzesPage />} />
                         <Route path="history" element={<QuizHistoryPage />} />
+                        <Route path="leaderboard" element={<QuizLeaderboardPage />} />
                         <Route path="attempts" element={<Navigate to="history" replace />} />
                         <Route path="results" element={<Navigate to="history" replace />} />
                         <Route path="modules/:moduleId/quizzes" element={<ModuleQuizListPage />} />
