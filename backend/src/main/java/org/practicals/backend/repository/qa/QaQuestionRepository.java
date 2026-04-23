@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface QuestionRepository extends JpaRepository<Question, Long> {
+public interface QaQuestionRepository extends JpaRepository<Question, Long> {
 
     Page<Question> findByStatus(QuestionStatus status, Pageable pageable);
 

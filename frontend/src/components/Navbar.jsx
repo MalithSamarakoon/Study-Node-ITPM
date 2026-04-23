@@ -103,6 +103,11 @@ const Navbar = () => {
                             </div>
                             <ul className="py-1">
                                 <li>
+                                    <Link to="/account" className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors font-medium block">
+                                        My Profile
+                                    </Link>
+                                </li>
+                                <li>
                                     <button
                                         onClick={handleSignOut}
                                         className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
@@ -118,9 +123,19 @@ const Navbar = () => {
 
             <nav className="border-t border-gray-200 bg-white">
                 <ul className="flex justify-center items-center gap-10 py-3 text-sm font-medium text-gray-700">
-                    <li className={navLinkClass('/')}>
-                        <Link to="/">Home</Link>
-                    </li>
+                    {/* Home Link: Only visible if NOT an admin */}
+                    {!admin && (
+                        <li className={navLinkClass('/')}>
+                            <Link to="/">Home</Link>
+                        </li>
+                    )}
+
+                    {/* Quiz Link: Only visible to Admins */}
+                    {admin && (
+                        <li className={navLinkClass('/quiz/admin')}>
+                            <Link to="/quiz/admin">Quiz</Link>
+                        </li>
+                    )}
                     <li className={navLinkClass('/resources/modules')}>
                         <Link to="/resources/modules">Modules</Link>
                     </li>
@@ -153,6 +168,11 @@ const Navbar = () => {
                     {student && (
                         <li className={navLinkClass('/qa')}>
                             <Link to="/qa">Q&A</Link>
+                        </li>
+                    )}
+                    {(student || !user) && (
+                        <li className={navLinkClass('/quiz/modules')}>
+                            <Link to="/quiz/modules">Quizzes</Link>
                         </li>
                     )}
                     <li className="hover:text-purple-600 cursor-pointer">FAQ</li>

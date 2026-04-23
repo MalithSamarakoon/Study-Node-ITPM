@@ -36,7 +36,7 @@ const Login = () => {
                 if (roles.includes('ROLE_ADMIN') || roles.includes('ADMIN')) {
                     navigate("/admin/modules");
                 } else {
-                    navigate("/resources/modules");
+                    navigate("/");
                 }
             }
         } catch (error) {
