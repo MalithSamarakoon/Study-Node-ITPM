@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero.jsx";
 import FeatureSlider from "./components/FeatureSlider.jsx";
@@ -16,10 +16,25 @@ import MyUploadsPage from "./pages/MyUploadsPage.jsx";
 import AdminModulesPage from "./pages/AdminModulesPage.jsx";
 import AdminResourceApprovalPage from "./pages/AdminResourceApprovalPage.jsx";
 import { AdminRoute, StudentRoute } from "./components/ProtectedRoute.jsx";
+import QuizFeedLayout from "./pages/QuizFeedLayout.jsx";
+import ModuleListPage from "./pages/ModuleListPage.jsx";
+import AvailableQuizzesPage from "./pages/AvailableQuizzesPage.jsx";
+import ModuleQuizListPage from "./pages/ModuleQuizListPage.jsx";
+import QuizAttemptPage from "./pages/QuizAttemptPage.jsx";
+import QuizResultPage from "./pages/QuizResultPage.jsx";
+import QuizHistoryPage from "./pages/QuizHistoryPage.jsx";
+import QuizLeaderboardPage from "./pages/QuizLeaderboardPage.jsx";
+import AdminQuizManagementPage from "./pages/AdminQuizManagementPage.jsx";
+import AdminQuizEngagementPage from "./pages/AdminQuizEngagementPage.jsx";
 import QAPage from "./pages/QAPage.jsx";
 import QuestionDetailPage from "./pages/QuestionDetailPage.jsx";
-import AccountPage from "./pages/AccountPage.jsx";
-import ProfileEditPage from "./pages/ProfileEditPage.jsx";
+import TeamupLayout from "./teamup/components/TeamupLayout.jsx";
+import TeamListPage from "./teamup/pages/TeamListPage.jsx";
+import CreateTeamPage from "./teamup/pages/CreateTeamPage.jsx";
+import TeamStatusPage from "./teamup/pages/TeamStatusPage.jsx";
+import TeamDetailsPage from "./teamup/pages/TeamDetailsPage.jsx";
+import TeamEditPage from "./teamup/pages/TeamEditPage.jsx";
+import TeamAdminPage from "./teamup/pages/TeamAdminPage.jsx";
 
 const HomePage = () => (
     <>
@@ -47,10 +62,20 @@ function App() {
                     <Route path="/blogs" element={<BlogPage />} />
                     <Route path="/blogs/create" element={<BlogEditorPage />} />
                     <Route path="/blogs/:id" element={<BlogDetailPage />} />
+                    <Route path="/teamup" element={<Navigate to="/teams" replace />} />
 
-                    {/* Account routes */}
-                    <Route path="/account" element={<AccountPage />} />
-                    <Route path="/account/edit" element={<ProfileEditPage />} />
+                    {/* TeamUp routes */}
+                    <Route path="/teams" element={<TeamupLayout />}>
+                        <Route index element={<TeamListPage />} />
+                        <Route path="new" element={<CreateTeamPage />} />
+                        <Route path="my" element={<TeamListPage onlyMine />} />
+                        <Route path="status" element={<TeamStatusPage />} />
+                        <Route path=":id" element={<TeamDetailsPage />} />
+                        <Route path=":id/edit" element={<TeamEditPage />} />
+                    </Route>
+                    <Route path="/admin/teamup" element={<TeamupLayout />}>
+                        <Route index element={<TeamAdminPage />} />
+                    </Route>
 
                     {/* Public resource browsing (any visitor) */}
                     <Route path="/resources/modules" element={<ModulesPage />} />
@@ -108,6 +133,50 @@ function App() {
                             </AdminRoute>
                         }
                     />
+
+                    {/* Quiz routes */}
+                    <Route path="/quiz" element={<QuizFeedLayout />}>
+                        <Route index element={<Navigate to="modules" replace />} />
+                        <Route path="modules" element={<ModuleListPage />} />
+                        <Route path="available" element={<AvailableQuizzesPage />} />
+                        <Route path="modules/:moduleId/quizzes" element={<ModuleQuizListPage />} />
+                        <Route path="modules/:moduleId/quizzes/:quizId/attempt" element={<QuizAttemptPage />} />
+                        <Route path="modules/:moduleId/results/:attemptId" element={<QuizResultPage />} />
+                        <Route path="history" element={<QuizHistoryPage />} />
+                        <Route path="leaderboard" element={<QuizLeaderboardPage />} />
+                        <Route
+                            path="admin"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="dashboard" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/modules"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="modules" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/quizzes"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizManagementPage view="quizzes" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/engagement"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizEngagementPage />
+                                </AdminRoute>
+                            }
+                        />
+                    </Route>
                 </Routes>
             </main>
             {!hideLayout && <Footer />}

@@ -35,6 +35,15 @@ const Navbar = () => {
             location.pathname === path ? 'text-purple-600 font-semibold' : ''
         }`;
 
+    const teamupNavClass =
+        `hover:text-purple-600 cursor-pointer transition-colors ${
+            location.pathname === '/teams' ||
+            location.pathname.startsWith('/teams/') ||
+            location.pathname === '/admin/teamup'
+                ? 'text-purple-600 font-semibold'
+                : ''
+        }`;
+
     return (
         <header className="w-full sticky top-0 z-40 bg-white shadow-sm">
             {/* Top bar: logo + auth */}
@@ -123,8 +132,8 @@ const Navbar = () => {
 
                     {/* Quiz Link: Only visible to Admins */}
                     {admin && (
-                        <li className={navLinkClass('/quiz')}>
-                            <Link to="/quiz">Quiz</Link>
+                        <li className={navLinkClass('/quiz/admin')}>
+                            <Link to="/quiz/admin">Quiz</Link>
                         </li>
                     )}
                     <li className={navLinkClass('/resources/modules')}>
@@ -161,8 +170,15 @@ const Navbar = () => {
                             <Link to="/qa">Q&A</Link>
                         </li>
                     )}
+                    {(student || !user) && (
+                        <li className={navLinkClass('/quiz/modules')}>
+                            <Link to="/quiz/modules">Quizzes</Link>
+                        </li>
+                    )}
                     <li className="hover:text-purple-600 cursor-pointer">FAQ</li>
-                    <li className="hover:text-purple-600 cursor-pointer">Find a Member</li>
+                    <li className={teamupNavClass}>
+                        <Link to="/teams">Find a Member</Link>
+                    </li>
                 </ul>
             </nav>
         </header>

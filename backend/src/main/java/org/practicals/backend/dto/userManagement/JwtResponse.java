@@ -1,7 +1,8 @@
 package org.practicals.backend.dto.userManagement;
 
-import lombok.Data;
 import java.util.List;
+
+import lombok.Data;
 
 /**
  * Returns the JWT and user details back to the student.
@@ -13,13 +14,15 @@ public class JwtResponse {
     private Long id;
     private String username;
     private String email;
+    private String studentId;
     private List<String> roles;
 
-    public JwtResponse(String accessToken, Long id, String username, String email, List<String> roles) {
+    public JwtResponse(String accessToken, Long id, String username, String email, String studentId, List<String> roles) {
         this.token = accessToken;
         this.id = id;
         this.username = username;
         this.email = email;
+        this.studentId = studentId;
         this.roles = roles;
     }
 }

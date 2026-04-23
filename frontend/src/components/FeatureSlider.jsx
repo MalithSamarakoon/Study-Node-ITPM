@@ -10,7 +10,7 @@ const FeatureSlider = () => {
         { title: "Share resources you have with peers", link: "/resources" },
         { title: "Share your knowledge by blogs", link: "/blogs" },
         { title: "Find qualified team members", link: "/teamup" },
-        { title: "Clarify doubts in Q&A", link: "/quiz" }
+        { title: "Clarify doubts in Q&A", link: "/quiz/modules" }
     ];
 
     return (
