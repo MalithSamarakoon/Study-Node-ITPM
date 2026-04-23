@@ -16,6 +16,12 @@ import {
   splitSkills,
 } from "../utils/teamMeta.js";
 
+const MY_SKILLS_STORAGE_KEY = "teamup_my_skills";
+
+function normalizeSkillToken(value) {
+  return value.trim().toLowerCase();
+}
+
 function TeamListPage({ onlyMine = false }) {
   const user = useCurrentUser();
   const currentUserId = String(user?.id || import.meta.env.VITE_TEAMUP_USER_ID || "1");
@@ -26,6 +32,17 @@ function TeamListPage({ onlyMine = false }) {
   const [error, setError] = useState("");
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("LATEST");
+  const [highMatchOnly, setHighMatchOnly] = useState(false);
+  const [mySkillsInput, setMySkillsInput] = useState("");
+  const [mySkills, setMySkills] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(MY_SKILLS_STORAGE_KEY) || "[]");
+      return Array.isArray(saved) ? saved.filter((item) => typeof item === "string") : [];
+    } catch {
+      return [];
+    }
+  });
   const [joiningTeamId, setJoiningTeamId] = useState(null);
   const [requestPendingIds, setRequestPendingIds] = useState({});
   const [statusUpdatingTeamId, setStatusUpdatingTeamId] = useState(null);
@@ -110,20 +127,47 @@ function TeamListPage({ onlyMine = false }) {
     }
   }, [markPendingFromJoinedTeams, onlyMine]);
 
-  const list = useMemo(() => {
-    const sorted = [...teams].sort((a, b) => Number(b.id) - Number(a.id));
+  useEffect(() => {
+    localStorage.setItem(MY_SKILLS_STORAGE_KEY, JSON.stringify(mySkills));
+  }, [mySkills]);
 
-    return sorted
+  const normalizedMySkills = useMemo(
+    () => mySkills.map(normalizeSkillToken).filter(Boolean),
+    [mySkills]
+  );
+
+  const mySkillSet = useMemo(() => new Set(normalizedMySkills), [normalizedMySkills]);
+
+  const list = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+
+    const enriched = teams
       .map((team) => {
         const meta = parseTeamMeta(team.description);
         const skills = splitSkills(team.requiredSkills);
         const status = formatTeamStatus(team.status, team.memberCount, meta.maxMembers);
+
+        const normalizedTeamSkills = skills.map(normalizeSkillToken).filter(Boolean);
+        const teamSkillSet = new Set(normalizedTeamSkills);
+        const matchedSkillTokens = [...teamSkillSet].filter((token) => mySkillSet.has(token));
+
+        const matchScore =
+          mySkillSet.size === 0 || teamSkillSet.size === 0
+            ? 0
+            : Math.round((matchedSkillTokens.length / teamSkillSet.size) * 100);
+
+        const matchedSkills = skills.filter((skill) =>
+          matchedSkillTokens.includes(normalizeSkillToken(skill))
+        );
 
         return {
           ...team,
           meta,
           skills,
           cardStatus: status,
+          matchScore,
+          matchedSkills,
+          availableSlots: Math.max(0, (meta.maxMembers || 0) - (team.memberCount || 0)),
         };
       })
       .filter((team) => {
@@ -131,18 +175,34 @@ function TeamListPage({ onlyMine = false }) {
           return false;
         }
 
-        if (!searchText.trim()) {
+        if (highMatchOnly && mySkillSet.size > 0 && team.matchScore < 70) {
+          return false;
+        }
+
+        if (!q) {
           return true;
         }
 
-        const q = searchText.toLowerCase();
         return (
           team.title.toLowerCase().includes(q) ||
           team.meta.cleanDescription.toLowerCase().includes(q) ||
           team.requiredSkills.toLowerCase().includes(q)
         );
       });
-  }, [teams, searchText, typeFilter]);
+
+    return [...enriched].sort((left, right) => {
+      if (sortBy === "BEST_MATCH") {
+        if (right.matchScore !== left.matchScore) {
+          return right.matchScore - left.matchScore;
+        }
+        if (right.availableSlots !== left.availableSlots) {
+          return right.availableSlots - left.availableSlots;
+        }
+      }
+
+      return Number(right.id) - Number(left.id);
+    });
+  }, [teams, searchText, typeFilter, mySkillSet, highMatchOnly, sortBy]);
 
   function openJoinModal(team) {
     setJoinModal({
@@ -152,6 +212,39 @@ function TeamListPage({ onlyMine = false }) {
       message: "Hi, I have SpringBoot experience",
       error: "",
     });
+  }
+
+  function addMySkill(rawValue) {
+    const nextSkill = rawValue.trim();
+    if (!nextSkill) {
+      return;
+    }
+
+    const nextNormalized = normalizeSkillToken(nextSkill);
+    const exists = mySkills.some((skill) => normalizeSkillToken(skill) === nextNormalized);
+    if (exists) {
+      setMySkillsInput("");
+      return;
+    }
+
+    setMySkills((prev) => [...prev, nextSkill]);
+    setMySkillsInput("");
+  }
+
+  function removeMySkill(skillToRemove) {
+    setMySkills((prev) => prev.filter((skill) => skill !== skillToRemove));
+  }
+
+  function handleSkillsInputKeyDown(event) {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      addMySkill(mySkillsInput);
+    }
+
+    if (event.key === "Backspace" && !mySkillsInput.trim() && mySkills.length > 0) {
+      event.preventDefault();
+      setMySkills((prev) => prev.slice(0, -1));
+    }
   }
 
   function closeJoinModal() {
@@ -236,7 +329,7 @@ function TeamListPage({ onlyMine = false }) {
           A platform for finding partners for projects, hackathons, and academic events.
         </p>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_180px_140px]">
+        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_180px_180px_140px]">
           <input
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
@@ -254,12 +347,77 @@ function TeamListPage({ onlyMine = false }) {
             <option value="EVENT">Filter: Event</option>
           </select>
 
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value)}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+          >
+            <option value="LATEST">Sort: Latest</option>
+            <option value="BEST_MATCH">Sort: Best Match</option>
+          </select>
+
           <button
             onClick={() => loadTeams("")}
             className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Refresh
           </button>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+          <p className="text-sm font-semibold text-slate-700">My Skills</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {mySkills.map((skill) => (
+              <button
+                key={skill}
+                type="button"
+                onClick={() => removeMySkill(skill)}
+                className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700"
+                title="Remove skill"
+              >
+                {skill}
+                <span aria-hidden="true">x</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              value={mySkillsInput}
+              onChange={(event) => setMySkillsInput(event.target.value)}
+              onKeyDown={handleSkillsInputKeyDown}
+              className="min-w-[220px] flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+              placeholder="Add a skill and press Enter (e.g. React, Spring)"
+            />
+            <button
+              type="button"
+              onClick={() => addMySkill(mySkillsInput)}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Add Skill
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMySkills([]);
+                setMySkillsInput("");
+                setHighMatchOnly(false);
+              }}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              Clear
+            </button>
+          </div>
+
+          <label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={highMatchOnly}
+              onChange={(event) => setHighMatchOnly(event.target.checked)}
+              disabled={mySkillSet.size === 0}
+            />
+            High match only (70%+)
+          </label>
         </div>
 
       </div>
@@ -296,6 +454,16 @@ function TeamListPage({ onlyMine = false }) {
                   Skills Needed: {team.skills.join(", ") || "Not specified"}
                 </p>
                 <p className="text-base font-semibold text-slate-700">Status: {team.cardStatus}</p>
+                {mySkillSet.size > 0 ? (
+                  <div className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-xl bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">
+                    <span>Match: {team.matchScore}%</span>
+                    {team.matchedSkills.length > 0 ? (
+                      <span className="text-emerald-800">({team.matchedSkills.join(", ")})</span>
+                    ) : (
+                      <span className="text-amber-700">(No exact skill overlap)</span>
+                    )}
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2">
