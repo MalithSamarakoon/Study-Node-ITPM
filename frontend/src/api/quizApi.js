@@ -114,3 +114,8 @@ export const fetchAttemptHistory = async () => {
     const { data } = await quizClient.get(`/students/${studentId}/attempts`);
     return data;
 };
+
+export const fetchModuleLeaderboard = async (moduleId) => {
+    const { data } = await quizClient.get(`/modules/${moduleId}/leaderboard`);
+    return data;
+};

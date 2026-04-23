@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { fetchAttemptHistory } from "../api/quizApi";
 
 function QuizHistoryPage() {
-    const location = useLocation();
     const [history, setHistory] = useState([]);
 
     useEffect(() => {
@@ -15,16 +14,87 @@ function QuizHistoryPage() {
         load();
     }, []);
 
-    const title = useMemo(() => {
-        if (location.pathname.endsWith("/attempts")) return "My Attempts";
-        if (location.pathname.endsWith("/results")) return "My Results";
-        return "Quiz History";
-    }, [location.pathname]);
+    const timeline = useMemo(() => {
+        return [...history].sort((left, right) => {
+            const leftDate = new Date(`${left.attemptDate}T00:00:00`);
+            const rightDate = new Date(`${right.attemptDate}T00:00:00`);
+            return leftDate - rightDate;
+        });
+    }, [history]);
+
+    const stats = useMemo(() => {
+        if (timeline.length === 0) {
+            return null;
+        }
+
+        const percentages = timeline.map((item) => (
+            item.totalMarks > 0 ? (item.score / item.totalMarks) * 100 : 0
+        ));
+        const bestPercentage = Math.max(...percentages);
+        const averagePercentage = percentages.reduce((sum, value) => sum + value, 0) / percentages.length;
+        const improvement = percentages[percentages.length - 1] - percentages[0];
+
+        return {
+            attempts: timeline.length,
+            bestPercentage,
+            averagePercentage,
+            improvement
+        };
+    }, [timeline]);
 
     return (
-        <div className="space-y-4">
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-900">Quiz History</h1>
+
+            {stats && (
+                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <article className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Attempts</p>
+                        <p className="mt-2 text-3xl font-bold text-violet-700">{stats.attempts}</p>
+                    </article>
+                    <article className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Best Score</p>
+                        <p className="mt-2 text-3xl font-bold text-violet-700">{Math.round(stats.bestPercentage)}%</p>
+                    </article>
+                    <article className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Average Score</p>
+                        <p className="mt-2 text-3xl font-bold text-violet-700">{Math.round(stats.averagePercentage)}%</p>
+                    </article>
+                    <article className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Improvement</p>
+                        <p className={`mt-2 text-3xl font-bold ${stats.improvement >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {stats.improvement >= 0 ? "+" : ""}{Math.round(stats.improvement)}%
+                        </p>
+                    </article>
+                </section>
+            )}
+
             {history.length === 0 && <p className="text-gray-500">No attempts yet.</p>}
+
+            {timeline.length > 0 && (
+                <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Performance Over Time</h2>
+                    <div className="space-y-3">
+                        {timeline.map((item) => {
+                            const percent = item.totalMarks > 0 ? (item.score / item.totalMarks) * 100 : 0;
+                            return (
+                                <div key={item.attemptId} className="rounded-xl bg-gray-50 p-3">
+                                    <div className="flex items-center justify-between gap-3 text-sm">
+                                        <span className="font-medium text-gray-900">{item.quizTitle}</span>
+                                        <span className="text-gray-600">{Math.round(percent)}% on {item.attemptDate}</span>
+                                    </div>
+                                    <div className="mt-2 h-2 rounded-full bg-gray-200">
+                                        <div
+                                            className="h-2 rounded-full bg-violet-600"
+                                            style={{ width: `${Math.min(percent, 100)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
 
             {history.map((item) => (
                 <article key={item.attemptId} className="bg-white border border-violet-100 rounded-2xl p-5 shadow-sm">

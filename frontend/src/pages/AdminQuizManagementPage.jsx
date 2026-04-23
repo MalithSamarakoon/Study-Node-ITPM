@@ -350,12 +350,12 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
                     marks: question.marks,
                     options: question.options.map((option) => ({
                         optionText: option.optionText,
-                        isCorrect: false
+                        isCorrect: Boolean(option.isCorrect)
                     }))
                 }))
             });
             setSelectedModuleId(String(detail.moduleId));
-            setMessage("Edit mode loaded. Choose the correct options again before saving.");
+            setMessage("Edit mode loaded. You can keep or change the correct options before saving.");
         } catch (error) {
             setMessage(error?.response?.data?.message || "Failed to load quiz details.");
         } finally {

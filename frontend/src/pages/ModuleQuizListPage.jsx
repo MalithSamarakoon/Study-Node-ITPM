@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { fetchModuleQuizzes, fetchModules } from "../api/quizApi";
+import { fetchModuleLeaderboard, fetchModuleQuizzes, fetchModules } from "../api/quizApi";
 
 function ModuleQuizListPage() {
     const { moduleId } = useParams();
     const [quizzes, setQuizzes] = useState([]);
     const [modules, setModules] = useState([]);
+    const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -17,6 +18,9 @@ function ModuleQuizListPage() {
                 ]);
                 setQuizzes(quizData);
                 setModules(moduleData);
+
+                const leaderboardData = await fetchModuleLeaderboard(moduleId);
+                setLeaderboard(leaderboardData);
             } finally {
                 setLoading(false);
             }
@@ -34,7 +38,7 @@ function ModuleQuizListPage() {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <h1 className="text-2xl font-bold text-gray-900">{moduleTitle}</h1>
             {quizzes.map((quiz) => (
                 <article key={quiz.id} className="bg-white border border-violet-100 rounded-2xl p-5 shadow-sm">
@@ -64,6 +68,39 @@ function ModuleQuizListPage() {
                     </div>
                 </article>
             ))}
+
+            <section className="rounded-2xl border border-amber-100 bg-amber-50 p-5 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 className="text-xl font-bold text-amber-900">Module Leaderboard</h2>
+                        <p className="text-sm text-amber-800">Top performers in this module, ranked by best attempt percentage.</p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-700 shadow-sm">
+                        Competitive view
+                    </span>
+                </div>
+
+                {leaderboard.length === 0 ? (
+                    <p className="text-sm text-amber-800">No attempts recorded for this module yet.</p>
+                ) : (
+                    <div className="space-y-3">
+                        {leaderboard.slice(0, 5).map((entry) => (
+                            <div key={`${entry.studentId}-${entry.rank}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-4">
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-900">
+                                        #{entry.rank} {entry.studentName} <span className="text-gray-500">({entry.studentId})</span>
+                                    </p>
+                                    <p className="text-xs text-gray-500">Best attempt: {entry.quizTitle} on {entry.attemptDate}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-lg font-bold text-amber-700">{Math.round(entry.percentage)}%</p>
+                                    <p className="text-xs text-gray-500">{entry.score} / {entry.totalMarks}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
         </div>
     );
 }

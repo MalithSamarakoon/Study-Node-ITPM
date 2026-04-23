@@ -1,5 +1,7 @@
 package org.practicals.backend.dto.quizManagement;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,5 +13,7 @@ public class QuestionOptionRequest {
     @NotBlank
     private String optionText;
 
-    private boolean isCorrect;
+    @JsonProperty("isCorrect")
+    @JsonAlias("correct")
+    private boolean correct;
 }

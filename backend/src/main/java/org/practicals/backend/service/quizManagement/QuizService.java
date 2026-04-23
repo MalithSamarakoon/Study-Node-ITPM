@@ -1,5 +1,7 @@
 package org.practicals.backend.service.quizManagement;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -8,9 +10,11 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.practicals.backend.dto.quizManagement.AttemptHistoryResponse;
+import org.practicals.backend.dto.quizManagement.AttemptQuestionReviewResponse;
 import org.practicals.backend.dto.quizManagement.AttemptResultResponse;
 import org.practicals.backend.dto.quizManagement.ModuleRequest;
 import org.practicals.backend.dto.quizManagement.ModuleResponse;
+import org.practicals.backend.dto.quizManagement.LeaderboardEntryResponse;
 import org.practicals.backend.dto.quizManagement.QuestionOptionRequest;
 import org.practicals.backend.dto.quizManagement.QuestionRequest;
 import org.practicals.backend.dto.quizManagement.QuizAttemptSubmitRequest;
@@ -190,6 +194,12 @@ public class QuizService {
 
         List<Question> oldQuestions = questionRepository.findByQuiz(savedQuiz);
         for (Question question : oldQuestions) {
+            List<StudentAnswer> studentAnswers = studentAnswerRepository.findByQuestion(question);
+            if (!studentAnswers.isEmpty()) {
+                studentAnswerRepository.deleteAll(studentAnswers);
+            }
+        }
+        for (Question question : oldQuestions) {
             questionOptionRepository.deleteByQuestion(question);
         }
         questionRepository.deleteAll(required(oldQuestions, "oldQuestions cannot be null"));
@@ -216,7 +226,7 @@ public class QuizService {
                         question.getQuestionText(),
                         question.getMarks(),
                         questionOptionRepository.findByQuestion(question).stream()
-                                .map(option -> new QuizOptionResponse(option.getId(), option.getOptionText()))
+                    .map(option -> new QuizOptionResponse(option.getId(), option.getOptionText(), Boolean.TRUE.equals(option.getIsCorrect())))
                                 .toList()
                 ))
                 .toList();
@@ -259,15 +269,16 @@ public class QuizService {
         List<Question> questions = questionRepository.findByQuiz(quiz);
         for (Question question : questions) {
             StudentAnswerRequest submittedAnswer = answersByQuestion.get(question.getId());
+            List<QuestionOption> options = questionOptionRepository.findByQuestion(question);
             QuestionOption selectedOption = null;
             boolean correct = false;
 
             if (submittedAnswer != null) {
-                selectedOption = questionOptionRepository.findById(required(submittedAnswer.getSelectedOptionId(), "selectedOptionId is required"))
+                selectedOption = options.stream()
+                        .filter(option -> Objects.equals(option.getId(), submittedAnswer.getSelectedOptionId()))
+                        .findFirst()
                         .orElse(null);
-                if (selectedOption != null && Objects.equals(selectedOption.getQuestion().getId(), question.getId())) {
-                    correct = Boolean.TRUE.equals(selectedOption.getIsCorrect());
-                }
+                correct = selectedOption != null && Boolean.TRUE.equals(selectedOption.getIsCorrect());
             }
 
             if (correct) {
@@ -287,16 +298,7 @@ public class QuizService {
         attempt.setScore(score);
         quizAttemptRepository.save(attempt);
 
-        return new AttemptResultResponse(
-                attempt.getId(),
-                quiz.getId(),
-                quiz.getTitle(),
-                score,
-                quiz.getTotalMarks(),
-                correctCount,
-                wrongCount,
-                attempt.getAttemptDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
-        );
+        return buildAttemptResultResponse(attempt);
     }
 
     @Transactional(readOnly = true)
@@ -304,11 +306,95 @@ public class QuizService {
         QuizAttempt attempt = quizAttemptRepository.findById(required(attemptId, "attemptId is required"))
                 .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
 
+        return buildAttemptResultResponse(attempt);
+    }
+
+    @Transactional(readOnly = true)
+    public List<LeaderboardEntryResponse> getModuleLeaderboard(Long moduleId) {
+        Module module = moduleRepository.findById(required(moduleId, "moduleId is required"))
+                .orElseThrow(() -> new ResourceNotFoundException("Module not found: " + moduleId));
+
+        Map<String, QuizAttempt> bestAttemptsByStudent = new HashMap<>();
+        for (QuizAttempt attempt : quizAttemptRepository.findAll()) {
+            if (!Objects.equals(attempt.getQuiz().getModule().getId(), module.getId())) {
+                continue;
+            }
+
+            String studentKey = attempt.getStudent().getStudentId();
+            QuizAttempt currentBest = bestAttemptsByStudent.get(studentKey);
+            if (currentBest == null || isBetterLeaderboardAttempt(attempt, currentBest)) {
+                bestAttemptsByStudent.put(studentKey, attempt);
+            }
+        }
+
+        List<LeaderboardEntryResponse> ranked = new ArrayList<>(bestAttemptsByStudent.values().stream()
+                .map(this::toLeaderboardEntry)
+                .sorted(Comparator.comparing(LeaderboardEntryResponse::getPercentage).reversed()
+                        .thenComparing(LeaderboardEntryResponse::getScore, Comparator.reverseOrder())
+                        .thenComparing(LeaderboardEntryResponse::getAttemptDate, Comparator.reverseOrder()))
+                .toList());
+
+        List<LeaderboardEntryResponse> withRanks = new ArrayList<>();
+        for (int index = 0; index < ranked.size(); index++) {
+            LeaderboardEntryResponse entry = ranked.get(index);
+            withRanks.add(new LeaderboardEntryResponse(
+                    index + 1,
+                    entry.getStudentId(),
+                    entry.getStudentName(),
+                    entry.getQuizId(),
+                    entry.getQuizTitle(),
+                    entry.getScore(),
+                    entry.getTotalMarks(),
+                    entry.getPercentage(),
+                    entry.getAttemptDate()
+            ));
+        }
+
+        return withRanks;
+    }
+
+    private AttemptResultResponse buildAttemptResultResponse(QuizAttempt attempt) {
         List<StudentAnswer> answers = studentAnswerRepository.findByAttempt(attempt);
-        int correctCount = (int) answers.stream()
-                .filter(answer -> answer.getSelectedOption() != null && Boolean.TRUE.equals(answer.getSelectedOption().getIsCorrect()))
-                .count();
-        int wrongCount = answers.size() - correctCount;
+        List<Question> questions = questionRepository.findByQuiz(attempt.getQuiz());
+        Map<Long, StudentAnswer> answersByQuestionId = new HashMap<>();
+        for (StudentAnswer answer : answers) {
+            answersByQuestionId.put(answer.getQuestion().getId(), answer);
+        }
+
+        List<AttemptQuestionReviewResponse> questionReviews = new ArrayList<>();
+        int correctCount = 0;
+        for (Question question : questions) {
+            List<QuestionOption> options = questionOptionRepository.findByQuestion(question);
+            QuestionOption correctOption = options.stream()
+                    .filter(option -> Boolean.TRUE.equals(option.getIsCorrect()))
+                    .findFirst()
+                    .orElse(null);
+
+            StudentAnswer answer = answersByQuestionId.get(question.getId());
+            QuestionOption selectedOption = null;
+            if (answer != null && answer.getSelectedOption() != null) {
+                Long selectedOptionId = answer.getSelectedOption().getId();
+                selectedOption = options.stream()
+                        .filter(option -> Objects.equals(option.getId(), selectedOptionId))
+                        .findFirst()
+                        .orElse(answer.getSelectedOption());
+            }
+            boolean correct = selectedOption != null && Boolean.TRUE.equals(selectedOption.getIsCorrect());
+            if (correct) {
+                correctCount++;
+            }
+
+            questionReviews.add(new AttemptQuestionReviewResponse(
+                    question.getId(),
+                    question.getQuestionText(),
+                    question.getMarks(),
+                    selectedOption != null ? selectedOption.getOptionText() : null,
+                    correctOption != null ? correctOption.getOptionText() : null,
+                    correct
+            ));
+        }
+
+        int wrongCount = questions.size() - correctCount;
 
         return new AttemptResultResponse(
                 attempt.getId(),
@@ -318,8 +404,47 @@ public class QuizService {
                 attempt.getQuiz().getTotalMarks(),
                 correctCount,
                 wrongCount,
+                attempt.getAttemptDate().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                questionReviews
+        );
+    }
+
+    private LeaderboardEntryResponse toLeaderboardEntry(QuizAttempt attempt) {
+        double percentage = calculatePercentage(attempt.getScore(), attempt.getQuiz().getTotalMarks());
+
+        return new LeaderboardEntryResponse(
+                0,
+                attempt.getStudent().getStudentId(),
+                attempt.getStudent().getUsername(),
+                attempt.getQuiz().getId(),
+                attempt.getQuiz().getTitle(),
+                attempt.getScore(),
+                attempt.getQuiz().getTotalMarks(),
+                percentage,
                 attempt.getAttemptDate().format(DateTimeFormatter.ISO_LOCAL_DATE)
         );
+    }
+
+    private boolean isBetterLeaderboardAttempt(QuizAttempt candidate, QuizAttempt currentBest) {
+        double candidatePercentage = calculatePercentage(candidate.getScore(), candidate.getQuiz().getTotalMarks());
+        double currentPercentage = calculatePercentage(currentBest.getScore(), currentBest.getQuiz().getTotalMarks());
+
+        if (Double.compare(candidatePercentage, currentPercentage) != 0) {
+            return candidatePercentage > currentPercentage;
+        }
+
+        if (!Objects.equals(candidate.getScore(), currentBest.getScore())) {
+            return candidate.getScore() > currentBest.getScore();
+        }
+
+        return candidate.getAttemptDate().isAfter(currentBest.getAttemptDate());
+    }
+
+    private double calculatePercentage(Integer score, Integer totalMarks) {
+        if (score == null || totalMarks == null || totalMarks == 0) {
+            return 0;
+        }
+        return (score * 100.0) / totalMarks;
     }
 
     @Transactional(readOnly = true)

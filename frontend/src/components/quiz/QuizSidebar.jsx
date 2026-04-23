@@ -4,8 +4,6 @@ import { isAdmin } from "../../utils/auth";
 const studentItems = [
     { label: "All Modules", path: "/quiz/modules" },
     { label: "Available Quizzes", path: "/quiz/available" },
-    { label: "My Attempts", path: "/quiz/attempts" },
-    { label: "My Results", path: "/quiz/results" },
     { label: "Quiz History", path: "/quiz/history" }
 ];
 

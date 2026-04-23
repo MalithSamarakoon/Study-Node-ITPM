@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.practicals.backend.dto.quizManagement.AttemptHistoryResponse;
 import org.practicals.backend.dto.quizManagement.AttemptResultResponse;
+import org.practicals.backend.dto.quizManagement.LeaderboardEntryResponse;
 import org.practicals.backend.dto.quizManagement.ModuleRequest;
 import org.practicals.backend.dto.quizManagement.ModuleResponse;
 import org.practicals.backend.dto.quizManagement.QuizAttemptSubmitRequest;
@@ -103,5 +104,10 @@ public class QuizController {
     @GetMapping("/students/{studentId}/attempts")
     public ResponseEntity<List<AttemptHistoryResponse>> getAttemptHistory(@PathVariable String studentId) {
         return ResponseEntity.ok(quizService.getAttemptHistory(studentId));
+    }
+
+    @GetMapping("/modules/{moduleId}/leaderboard")
+    public ResponseEntity<List<LeaderboardEntryResponse>> getModuleLeaderboard(@PathVariable Long moduleId) {
+        return ResponseEntity.ok(quizService.getModuleLeaderboard(moduleId));
     }
 }

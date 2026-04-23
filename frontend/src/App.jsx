@@ -146,9 +146,9 @@ function App() {
                         />
                         <Route path="modules" element={<ModuleListPage />} />
                         <Route path="available" element={<AvailableQuizzesPage />} />
-                        <Route path="attempts" element={<QuizHistoryPage />} />
-                        <Route path="results" element={<QuizHistoryPage />} />
                         <Route path="history" element={<QuizHistoryPage />} />
+                        <Route path="attempts" element={<Navigate to="history" replace />} />
+                        <Route path="results" element={<Navigate to="history" replace />} />
                         <Route path="modules/:moduleId/quizzes" element={<ModuleQuizListPage />} />
                         <Route path="modules/:moduleId/quizzes/:quizId/attempt" element={<QuizAttemptPage />} />
                         <Route path="modules/:moduleId/results/:attemptId" element={<QuizResultPage />} />
