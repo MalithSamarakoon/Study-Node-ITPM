@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import {
     createModule,
     createQuiz,
@@ -44,7 +45,6 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState("");
 
     const showModuleArea = view === "dashboard" || view === "modules";
     const showQuizArea = view === "dashboard" || view === "quizzes";
@@ -126,22 +126,21 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
 
     const handleModuleSubmit = async (event) => {
         event.preventDefault();
-        setMessage("");
         setSaving(true);
 
         try {
             if (editingModuleId) {
                 await updateModule(editingModuleId, moduleForm);
-                setMessage("Module updated successfully.");
+                toast.success("Module updated successfully.");
             } else {
                 await createModule(moduleForm);
-                setMessage("Module created successfully.");
+                toast.success("Module created successfully.");
             }
 
             resetModuleForm();
             await loadModules();
         } catch (error) {
-            setMessage(error?.response?.data?.message || "Failed to save module.");
+            toast.error(error?.response?.data?.message || "Failed to save module.");
         } finally {
             setSaving(false);
         }
@@ -153,7 +152,6 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
             title: module.title || "",
             description: module.description || ""
         });
-        setMessage("");
     };
 
     const handleDeleteModule = async (module) => {
@@ -162,7 +160,6 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
         );
         if (!confirmed) return;
 
-        setMessage("");
         setSaving(true);
 
         try {
@@ -170,11 +167,11 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
             if (String(selectedModuleId) === String(module.id)) {
                 setSelectedModuleId("");
             }
-            setMessage("Module deleted successfully.");
+            toast.success("Module deleted successfully.");
             resetModuleForm();
             await loadModules();
         } catch (error) {
-            setMessage(error?.response?.data?.message || "Failed to delete module.");
+            toast.error(error?.response?.data?.message || "Failed to delete module.");
         } finally {
             setSaving(false);
         }
@@ -274,15 +271,14 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
 
     const handleQuizSubmit = async (event) => {
         event.preventDefault();
-        setMessage("");
 
         if (view === "quizzes" && !editingQuizId) {
-            setMessage("Select a quiz first to manage and update it.");
+            toast.error("Select a quiz first to manage and update it.");
             return;
         }
 
         if (!quizForm.moduleId) {
-            setMessage("Please select a module for this quiz.");
+            toast.error("Please select a module for this quiz.");
             return;
         }
 
@@ -294,7 +290,7 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
         });
 
         if (hasInvalidQuestion) {
-            setMessage("Each question needs text, non-empty options, and one correct option.");
+            toast.error("Each question needs text, non-empty options, and one correct option.");
             return;
         }
 
@@ -317,23 +313,22 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
         try {
             if (editingQuizId) {
                 await updateQuiz(editingQuizId, payload);
-                setMessage("Quiz updated successfully.");
+                toast.success("Quiz updated successfully.");
             } else {
                 await createQuiz(quizForm.moduleId, payload);
-                setMessage("Quiz created successfully.");
+                toast.success("Quiz created successfully.");
             }
 
             await loadQuizzesByModule(quizForm.moduleId);
             resetQuizForm();
         } catch (error) {
-            setMessage(error?.response?.data?.message || "Failed to save quiz.");
+            toast.error(error?.response?.data?.message || "Failed to save quiz.");
         } finally {
             setSaving(false);
         }
     };
 
     const handleEditQuiz = async (quizId) => {
-        setMessage("");
         setSaving(true);
 
         try {
@@ -355,9 +350,9 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
                 }))
             });
             setSelectedModuleId(String(detail.moduleId));
-            setMessage("Edit mode loaded. You can keep or change the correct options before saving.");
+            toast.info("Edit mode loaded. You can keep or change the correct options before saving.");
         } catch (error) {
-            setMessage(error?.response?.data?.message || "Failed to load quiz details.");
+            toast.error(error?.response?.data?.message || "Failed to load quiz details.");
         } finally {
             setSaving(false);
         }
@@ -368,17 +363,16 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
         if (!confirmed) return;
 
         setSaving(true);
-        setMessage("");
 
         try {
             await deleteQuiz(quiz.id);
-            setMessage("Quiz deleted successfully.");
+            toast.success("Quiz deleted successfully.");
             if (editingQuizId === quiz.id) {
                 resetQuizForm();
             }
             await loadQuizzesByModule(selectedModuleId);
         } catch (error) {
-            setMessage(error?.response?.data?.message || "Failed to delete quiz.");
+            toast.error(error?.response?.data?.message || "Failed to delete quiz.");
         } finally {
             setSaving(false);
         }
@@ -395,11 +389,6 @@ function AdminQuizManagementPage({ view = "dashboard" }) {
                 <p className="text-sm text-gray-600 mt-1">
                     Full CRUD for modules and quizzes in one admin panel.
                 </p>
-                {message && (
-                    <p className="mt-3 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
-                        {message}
-                    </p>
-                )}
             </header>
 
             {showModuleArea && (

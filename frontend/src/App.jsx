@@ -14,7 +14,6 @@ import ModuleQuizListPage from "./pages/ModuleQuizListPage.jsx";
 import QuizAttemptPage from "./pages/QuizAttemptPage.jsx";
 import QuizResultPage from "./pages/QuizResultPage.jsx";
 import QuizHistoryPage from "./pages/QuizHistoryPage.jsx";
-import { ToastContainer } from 'react-toastify';
 import BlogEditorPage from "./pages/BlogEditorPage.jsx";
 import BlogDetailPage from "./pages/BlogDetailPage.jsx";
 import ModulesPage from "./pages/ModulesPage.jsx";
@@ -156,7 +155,6 @@ function App() {
                 </Routes>
             </main>
             {!hideLayout && <Footer />}
-            <ToastContainer />
         </div>
     );
 }
