@@ -136,6 +136,16 @@ function QuizAttemptPage() {
     return (
         <div className="space-y-5">
             <h1 className="text-2xl font-bold text-gray-900">{quiz.title}</h1>
+            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">Before you start</p>
+                <p className="mt-2 text-sm text-amber-900">
+                    Read each question carefully, manage your time well, and answer every question before submitting.
+                    Once the quiz starts, you should stay on this page until you finish or the timer ends.
+                </p>
+                <p className="mt-3 text-sm font-medium text-amber-900">
+                    Important: you cannot exit while the quiz is in progress.
+                </p>
+            </section>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-white border border-violet-100 rounded-xl px-4 py-3">
                     <p className="text-xs text-gray-500">Duration</p>
