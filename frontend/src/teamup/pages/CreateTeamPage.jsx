@@ -181,19 +181,19 @@ function CreateTeamPage() {
   }
 
   return (
-    <section className="rounded-3xl border border-[#e7cab5] bg-[#fffdfb] p-6 text-[#6a3c1c] shadow-[0_8px_20px_rgba(123,63,23,0.06)] sm:p-8">
-      <h2 className="text-5xl font-extrabold text-[#7b3f17]">Create a New Team</h2>
-      <p className="mt-2 text-xl text-[#885534]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <h2 className="text-5xl font-extrabold text-slate-900">Create a New Team</h2>
+      <p className="mt-2 text-xl text-slate-600">
         Fill in the details to create a new project team.
       </p>
 
       <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
         <div>
           <div className="flex items-center justify-between">
-            <label htmlFor="title" className="block text-lg font-semibold text-[#704021]">
+            <label htmlFor="title" className="block text-lg font-semibold text-slate-900">
               Team Name
             </label>
-            <span className="text-sm text-[#9b6d4e]">
+            <span className="text-sm text-slate-500">
               {form.title.length}/100
             </span>
           </div>
@@ -203,14 +203,14 @@ function CreateTeamPage() {
             value={form.title}
             onChange={handleChange}
             maxLength={100}
-            className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-lg outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
             placeholder="Enter team name..."
           />
           {errors.title ? <p className="mt-1 text-sm text-rose-600">{errors.title}</p> : null}
         </div>
 
         <div>
-          <p className="block text-lg font-semibold text-[#704021]">Type</p>
+          <p className="block text-lg font-semibold text-slate-900">Type</p>
           <div className="mt-2 flex flex-wrap gap-5 text-base">
             <label className="flex items-center gap-2">
               <input
@@ -239,11 +239,11 @@ function CreateTeamPage() {
           <div className="flex items-center justify-between">
             <label
               htmlFor="description"
-              className="block text-lg font-semibold text-[#704021]"
+              className="block text-lg font-semibold text-slate-900"
             >
               Description
             </label>
-            <span className="text-sm text-[#9b6d4e]">
+            <span className="text-sm text-slate-500">
               {form.description.length}/1000
             </span>
           </div>
@@ -254,7 +254,7 @@ function CreateTeamPage() {
             onChange={handleChange}
             maxLength={1000}
             rows={5}
-            className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-lg outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
             placeholder="Describe the project, goals, and objectives..."
           />
           {errors.description ? (
@@ -266,7 +266,7 @@ function CreateTeamPage() {
           <div>
             <label
               htmlFor="maxMembers"
-              className="block text-lg font-semibold text-[#704021]"
+              className="block text-lg font-semibold text-slate-900"
             >
               Max Members
             </label>
@@ -275,7 +275,7 @@ function CreateTeamPage() {
               name="maxMembers"
               value={form.maxMembers}
               onChange={handleChange}
-              className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-lg outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
               placeholder="5"
             />
             {errors.maxMembers ? (
@@ -286,7 +286,7 @@ function CreateTeamPage() {
           <div>
             <label
               htmlFor="deadline"
-              className="block text-lg font-semibold text-[#704021]"
+              className="block text-lg font-semibold text-slate-900"
             >
               Deadline (optional)
             </label>
@@ -296,7 +296,7 @@ function CreateTeamPage() {
               type="date"
               value={form.deadline}
               onChange={handleChange}
-              className="mt-1 w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-lg outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
             />
             {errors.deadline ? (
               <p className="mt-1 text-sm text-rose-600">{errors.deadline}</p>
@@ -305,21 +305,21 @@ function CreateTeamPage() {
         </div>
 
         <div>
-          <label className="block text-lg font-semibold text-[#704021]">Skills Required</label>
-          <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-[#e5c5ad] bg-[#fffcfa] p-3">
+          <label className="block text-lg font-semibold text-slate-900">Skills Required</label>
+          <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3">
             {form.skills.map((skill) => (
               <button
                 key={skill}
                 type="button"
                 onClick={() => removeSkill(skill)}
-                className="rounded-full bg-[#ffe7d3] px-3 py-1 text-sm font-semibold text-[#8a4f26]"
+                className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-700"
                 title="Remove skill"
               >
                 {skill} x
               </button>
             ))}
             {form.skills.length === 0 ? (
-              <span className="text-sm text-[#9b6d4e]">No skills added yet.</span>
+              <span className="text-sm text-slate-500">No skills added yet.</span>
             ) : null}
           </div>
           <div className="mt-2 flex flex-col gap-2">
@@ -335,13 +335,13 @@ function CreateTeamPage() {
                   }
                 }}
                 maxLength={20}
-                className="w-full rounded-xl border border-[#e5c5ad] px-4 py-3 text-lg outline-none focus:border-[#eb8f3a]"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-lg outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                 placeholder="Add skill (2-20 characters)"
               />
               <button
                 type="button"
                 onClick={() => addSkill(form.skillInput)}
-                className="rounded-xl border border-[#d7b69e] px-4 py-3 text-sm font-semibold text-[#8a4f26]"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 + Add
               </button>
@@ -361,7 +361,7 @@ function CreateTeamPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex items-center rounded-xl bg-[#ef8f31] px-6 py-3 text-lg font-semibold text-white transition hover:bg-[#dd7f23] disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex items-center rounded-xl bg-blue-600 px-6 py-3 text-lg font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {submitting ? "Creating..." : "Create Team"}
         </button>
