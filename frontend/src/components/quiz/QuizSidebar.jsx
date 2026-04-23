@@ -10,7 +10,8 @@ const studentItems = [
 const adminItems = [
     { label: "Quiz Dashboard", path: "/quiz/admin" },
     { label: "Manage Modules", path: "/quiz/admin/modules" },
-    { label: "Manage Quizzes", path: "/quiz/admin/quizzes" }
+    { label: "Manage Quizzes", path: "/quiz/admin/quizzes" },
+    { label: "Quiz Engagement", path: "/quiz/admin/engagement" }
 ];
 
 function QuizSidebar() {

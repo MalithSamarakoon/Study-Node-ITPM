@@ -119,3 +119,8 @@ export const fetchModuleLeaderboard = async (moduleId) => {
     const { data } = await quizClient.get(`/modules/${moduleId}/leaderboard`);
     return data;
 };
+
+export const fetchQuizEngagementStats = async () => {
+    const { data } = await quizClient.get("/engagement");
+    return data;
+};

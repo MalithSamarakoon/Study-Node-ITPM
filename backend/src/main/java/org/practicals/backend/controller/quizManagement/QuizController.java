@@ -9,6 +9,7 @@ import org.practicals.backend.dto.quizManagement.ModuleRequest;
 import org.practicals.backend.dto.quizManagement.ModuleResponse;
 import org.practicals.backend.dto.quizManagement.QuizAttemptSubmitRequest;
 import org.practicals.backend.dto.quizManagement.QuizDetailResponse;
+import org.practicals.backend.dto.quizManagement.QuizEngagementStatsResponse;
 import org.practicals.backend.dto.quizManagement.QuizRequest;
 import org.practicals.backend.dto.quizManagement.QuizSummaryResponse;
 import org.practicals.backend.service.quizManagement.QuizService;
@@ -109,5 +110,10 @@ public class QuizController {
     @GetMapping("/modules/{moduleId}/leaderboard")
     public ResponseEntity<List<LeaderboardEntryResponse>> getModuleLeaderboard(@PathVariable Long moduleId) {
         return ResponseEntity.ok(quizService.getModuleLeaderboard(moduleId));
+    }
+
+    @GetMapping("/engagement")
+    public ResponseEntity<QuizEngagementStatsResponse> getQuizEngagementStats() {
+        return ResponseEntity.ok(quizService.getQuizEngagementStats());
     }
 }

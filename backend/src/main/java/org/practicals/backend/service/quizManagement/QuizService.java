@@ -1,5 +1,6 @@
 package org.practicals.backend.service.quizManagement;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.practicals.backend.dto.quizManagement.ActivityTrendResponse;
 import org.practicals.backend.dto.quizManagement.AttemptHistoryResponse;
 import org.practicals.backend.dto.quizManagement.AttemptQuestionReviewResponse;
 import org.practicals.backend.dto.quizManagement.AttemptResultResponse;
@@ -17,13 +19,16 @@ import org.practicals.backend.dto.quizManagement.ModuleRequest;
 import org.practicals.backend.dto.quizManagement.ModuleResponse;
 import org.practicals.backend.dto.quizManagement.QuestionOptionRequest;
 import org.practicals.backend.dto.quizManagement.QuestionRequest;
+import org.practicals.backend.dto.quizManagement.QuizActivityResponse;
 import org.practicals.backend.dto.quizManagement.QuizAttemptSubmitRequest;
 import org.practicals.backend.dto.quizManagement.QuizDetailResponse;
+import org.practicals.backend.dto.quizManagement.QuizEngagementStatsResponse;
 import org.practicals.backend.dto.quizManagement.QuizOptionResponse;
 import org.practicals.backend.dto.quizManagement.QuizQuestionResponse;
 import org.practicals.backend.dto.quizManagement.QuizRequest;
 import org.practicals.backend.dto.quizManagement.QuizSummaryResponse;
 import org.practicals.backend.dto.quizManagement.StudentAnswerRequest;
+import org.practicals.backend.dto.quizManagement.StudentEngagementResponse;
 import org.practicals.backend.exception.ResourceNotFoundException;
 import org.practicals.backend.model.quizManagement.Module;
 import org.practicals.backend.model.quizManagement.Question;
@@ -256,8 +261,6 @@ public class QuizService {
         }
 
         int score = 0;
-        int correctCount = 0;
-        int wrongCount = 0;
 
         QuizAttempt attempt = new QuizAttempt();
         attempt.setQuiz(quiz);
@@ -283,9 +286,6 @@ public class QuizService {
 
             if (correct) {
                 score += question.getMarks();
-                correctCount++;
-            } else {
-                wrongCount++;
             }
 
             StudentAnswer answer = new StudentAnswer();
@@ -463,6 +463,150 @@ public class QuizService {
                 ))
                 .toList();
     }
+
+            @Transactional(readOnly = true)
+            public QuizEngagementStatsResponse getQuizEngagementStats() {
+            List<QuizAttempt> attempts = quizAttemptRepository.findAll();
+
+            if (attempts.isEmpty()) {
+                return new QuizEngagementStatsResponse(
+                    0L,
+                    0L,
+                    0L,
+                    0.0,
+                    null,
+                    null,
+                    List.of(),
+                    List.of(),
+                    List.of()
+                );
+            }
+
+            Map<Long, List<QuizAttempt>> attemptsByQuiz = new HashMap<>();
+            Map<String, List<QuizAttempt>> attemptsByStudent = new HashMap<>();
+            for (QuizAttempt attempt : attempts) {
+                attemptsByQuiz.computeIfAbsent(attempt.getQuiz().getId(), key -> new ArrayList<>()).add(attempt);
+                attemptsByStudent.computeIfAbsent(attempt.getStudent().getStudentId(), key -> new ArrayList<>()).add(attempt);
+            }
+
+            long uniqueStudents = attemptsByStudent.size();
+            long quizzesWithAttempts = attemptsByQuiz.size();
+            double averageScorePercentage = attempts.stream()
+                .mapToDouble(attempt -> calculatePercentage(attempt.getScore(), attempt.getQuiz().getTotalMarks()))
+                .average()
+                .orElse(0.0);
+
+            List<QuizActivityResponse> quizActivity = attemptsByQuiz.values().stream()
+                .map(this::toQuizActivityResponse)
+                .sorted(Comparator.comparing(QuizActivityResponse::getAttempts, Comparator.reverseOrder())
+                    .thenComparing(QuizActivityResponse::getAverageScorePercentage, Comparator.reverseOrder()))
+                .toList();
+
+            QuizActivityResponse mostEngagedQuiz = quizActivity.stream()
+                .max(Comparator.comparing(QuizActivityResponse::getAttempts)
+                    .thenComparing(QuizActivityResponse::getUniqueStudents)
+                    .thenComparing(QuizActivityResponse::getAverageScorePercentage))
+                .orElse(null);
+
+            QuizActivityResponse mostLikedQuiz = quizActivity.stream()
+                .max(Comparator.comparing(QuizActivityResponse::getRepeatAttemptRate)
+                    .thenComparing(QuizActivityResponse::getAttempts)
+                    .thenComparing(QuizActivityResponse::getAverageScorePercentage))
+                .orElse(null);
+
+            List<StudentEngagementResponse> studentEngagement = attemptsByStudent.values().stream()
+                .map(studentAttempts -> {
+                    QuizAttempt latestAttempt = studentAttempts.stream()
+                        .max(Comparator.comparing(QuizAttempt::getAttemptDate))
+                        .orElse(null);
+
+                    if (latestAttempt == null) {
+                    return null;
+                    }
+
+                    double avgScorePercentage = studentAttempts.stream()
+                        .mapToDouble(attempt -> calculatePercentage(attempt.getScore(), attempt.getQuiz().getTotalMarks()))
+                        .average()
+                        .orElse(0.0);
+
+                    double bestScorePercentage = studentAttempts.stream()
+                        .mapToDouble(attempt -> calculatePercentage(attempt.getScore(), attempt.getQuiz().getTotalMarks()))
+                        .max()
+                        .orElse(0.0);
+
+                    return new StudentEngagementResponse(
+                        latestAttempt.getStudent().getStudentId(),
+                        latestAttempt.getStudent().getUsername(),
+                        (long) studentAttempts.size(),
+                        avgScorePercentage,
+                        bestScorePercentage,
+                        latestAttempt.getAttemptDate().toLocalDate().toString()
+                    );
+                })
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(StudentEngagementResponse::getAttempts, Comparator.reverseOrder())
+                    .thenComparing(StudentEngagementResponse::getAverageScorePercentage, Comparator.reverseOrder()))
+                .toList();
+
+            LocalDate today = LocalDate.now();
+            List<ActivityTrendResponse> activityTrend = new ArrayList<>();
+            for (int dayOffset = 6; dayOffset >= 0; dayOffset--) {
+                LocalDate day = today.minusDays(dayOffset);
+                List<QuizAttempt> dayAttempts = attempts.stream()
+                    .filter(attempt -> attempt.getAttemptDate().toLocalDate().isEqual(day))
+                    .toList();
+
+                long dayUniqueStudents = dayAttempts.stream()
+                    .map(attempt -> attempt.getStudent().getStudentId())
+                    .distinct()
+                    .count();
+
+                activityTrend.add(new ActivityTrendResponse(
+                    day.toString(),
+                    (long) dayAttempts.size(),
+                    dayUniqueStudents
+                ));
+            }
+
+            return new QuizEngagementStatsResponse(
+                (long) attempts.size(),
+                uniqueStudents,
+                quizzesWithAttempts,
+                averageScorePercentage,
+                mostEngagedQuiz,
+                mostLikedQuiz,
+                studentEngagement,
+                quizActivity,
+                activityTrend
+            );
+            }
+
+            private QuizActivityResponse toQuizActivityResponse(List<QuizAttempt> quizAttempts) {
+            QuizAttempt sample = quizAttempts.get(0);
+            long attemptCount = quizAttempts.size();
+            long uniqueStudents = quizAttempts.stream()
+                .map(attempt -> attempt.getStudent().getStudentId())
+                .distinct()
+                .count();
+
+            double averageScorePercentage = quizAttempts.stream()
+                .mapToDouble(attempt -> calculatePercentage(attempt.getScore(), attempt.getQuiz().getTotalMarks()))
+                .average()
+                .orElse(0.0);
+
+            long repeatAttempts = Math.max(0, attemptCount - uniqueStudents);
+            double repeatAttemptRate = attemptCount > 0 ? (repeatAttempts * 100.0) / attemptCount : 0.0;
+
+            return new QuizActivityResponse(
+                sample.getQuiz().getId(),
+                sample.getQuiz().getTitle(),
+                sample.getQuiz().getModule().getTitle(),
+                attemptCount,
+                uniqueStudents,
+                averageScorePercentage,
+                repeatAttemptRate
+            );
+            }
 
     private void saveQuestionGraph(Quiz quiz, List<QuestionRequest> questionRequests) {
         for (QuestionRequest questionRequest : questionRequests) {

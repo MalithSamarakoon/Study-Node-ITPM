@@ -27,6 +27,7 @@ import QuestionDetailPage from "./pages/QuestionDetailPage.jsx";
 import AccountPage from "./pages/AccountPage.jsx";
 import ProfileEditPage from "./pages/ProfileEditPage.jsx";
 import AdminQuizManagementPage from "./pages/AdminQuizManagementPage.jsx";
+import AdminQuizEngagementPage from "./pages/AdminQuizEngagementPage.jsx";
 
 const HomePage = () => (
     <>
@@ -140,6 +141,14 @@ function App() {
                             element={
                                 <AdminRoute>
                                     <AdminQuizManagementPage view="quizzes" />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="admin/engagement"
+                            element={
+                                <AdminRoute>
+                                    <AdminQuizEngagementPage />
                                 </AdminRoute>
                             }
                         />
