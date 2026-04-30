@@ -7,6 +7,7 @@ import org.practicals.backend.security.services.UserDetailsImpl;
 import org.practicals.backend.service.userManagement.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +34,17 @@ public class UserController {
 
         UserResponse updatedUser = userService.updateUserProfile(userDetails.getId(), userUpdateRequest, profileImage);
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteMyAccount(Authentication authentication) {
+        // 1. Identify the user from the JWT token
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+        // 2. Call the service to perform the deletion
+        userService.deleteUser(userDetails.getId());
+
+        return ResponseEntity.ok("Account deleted successfully");
     }
 }
 

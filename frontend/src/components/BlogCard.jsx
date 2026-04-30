@@ -25,8 +25,11 @@ const BlogCard = ({ id, writer, topic, imageUrl, tags }) => {
 
                 {/* Tags at bottom */}
                 <div className="flex gap-2">
-                    {tags.map((tag, index) => (
-                        <Tag key={index} name={tag} />
+                    {tags && tags.map((tag, index) => (
+                        <Tag
+                            key={tag.id || index}
+                            name={typeof tag === 'object' ? tag.name : tag}
+                        />
                     ))}
                 </div>
             </div>

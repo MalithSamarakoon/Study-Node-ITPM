@@ -35,6 +35,9 @@ import TeamStatusPage from "./teamup/pages/TeamStatusPage.jsx";
 import TeamDetailsPage from "./teamup/pages/TeamDetailsPage.jsx";
 import TeamEditPage from "./teamup/pages/TeamEditPage.jsx";
 import TeamAdminPage from "./teamup/pages/TeamAdminPage.jsx";
+import AccountPage from "./pages/AccountPage.jsx";
+import ProfileEditPage from "./pages/ProfileEditPage.jsx";
+import BlogUpdatePage from "./pages/BlogUpdatePage.jsx";
 
 const HomePage = () => (
     <>
@@ -61,8 +64,13 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/blogs" element={<BlogPage />} />
                     <Route path="/blogs/create" element={<BlogEditorPage />} />
+                    <Route path="/blogs/edit/:id" element={<BlogUpdatePage />} />
                     <Route path="/blogs/:id" element={<BlogDetailPage />} />
                     <Route path="/teamup" element={<Navigate to="/teams" replace />} />
+
+                    {/* Account routes */}
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/account/edit" element={<ProfileEditPage />} />
 
                     {/* TeamUp routes */}
                     <Route path="/teams" element={<TeamupLayout />}>

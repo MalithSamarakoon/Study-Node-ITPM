@@ -1,4 +1,6 @@
 // Auth utility helpers
+import axios from "axios";
+
 export const getUser = () => {
     try {
         const stored = localStorage.getItem('user');
@@ -51,4 +53,12 @@ export const isStudent = () => {
 export const logout = () => {
     localStorage.removeItem('user');
     window.dispatchEvent(new Event('authChange'));
+};
+
+export const deleteAccount = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: { Authorization: `Bearer ${user.token}` }
+    };
+    return axios.delete("http://localhost:8080/api/users/me", config);
 };

@@ -4,11 +4,14 @@ import org.practicals.backend.dto.userManagement.RegistrationRequest;
 import org.practicals.backend.dto.userManagement.UserResponse;
 import org.practicals.backend.dto.userManagement.UserUpdateRequest;
 import org.practicals.backend.exception.ResourceNotFoundException;
+import org.practicals.backend.model.blogManagement.Blog;
 import org.practicals.backend.model.userManagement.Role;
 import org.practicals.backend.model.userManagement.User;
+import org.practicals.backend.repository.blogManagement.BlogRepository;
 import org.practicals.backend.repository.userManagement.UserRepository;
 import org.practicals.backend.security.jwt.JwtUtils;
 import org.practicals.backend.security.services.UserDetailsImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -17,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @Service
 public class UserService {
 
@@ -24,6 +29,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
     private final JwtUtils jwtUtils;
+
+    @Autowired
+    private BlogRepository blogRepository;
 
     // Constructor injection for dependencies [cite: 8]
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, @Qualifier("userProfileStorageService") FileStorageService fileStorageService, JwtUtils jwtUtils) {
@@ -105,6 +113,13 @@ public class UserService {
         UserResponse response = mapToUserResponse(updatedUser);
         response.setToken(newToken);
         return response;
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        List<Blog> userBlogs = blogRepository.findByWriterId(userId);
+        blogRepository.deleteAll(userBlogs);
+        userRepository.deleteById(userId);
     }
 
     @Transactional(readOnly = true)
