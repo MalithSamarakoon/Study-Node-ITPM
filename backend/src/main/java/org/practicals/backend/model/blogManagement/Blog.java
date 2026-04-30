@@ -2,6 +2,8 @@ package org.practicals.backend.model.blogManagement;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.practicals.backend.model.userManagement.User;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,7 +19,11 @@ public class Blog {
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 
-    private String writerName;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User writer;
+
     private String imageUrl;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
