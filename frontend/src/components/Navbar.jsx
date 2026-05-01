@@ -73,7 +73,7 @@ const Navbar = () => {
                                 aria-label="Profile menu"
                             >
                                 <img
-                                    src={profileImage}
+                                    src={user.profilePicturePath ? `http://localhost:8080${user.profilePicturePath}` : profileImage}
                                     alt="Profile"
                                     className="w-10 h-10 rounded-full border-2 border-gray-200 hover:border-purple-400 transition-all"
                                 />
